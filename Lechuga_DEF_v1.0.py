@@ -55,7 +55,7 @@ import tqdm
 #from pandas_datareader import wb, DataReader
 #import wget
 
-hora_ejecucion = 12 # time to stop and restart en utc --- +1 invierno +2 verano
+hora_ejecucion = 12
 minuto_ejecucion = 55
 hora_inicio = datetime.datetime.utcnow()
 crypto = 'LTC-EUR'
@@ -313,7 +313,7 @@ print ('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) t
 
 ## INITIAL RESET FOR VARIABLES
 n_orders = 2 # Para los aleatorios
-n_ciclos_to_cancel = 60
+n_ciclos_to_cancel = 80
 ndisparador = 5 ##60 Tiempo en segundos o ciclos entre ordenes de compra #5
 disparador1 = ndisparador ## Espaciado entre ordenes compras
 disparador2 = 0 ## Para el numero maximo de ordenes de compra, relacionado con n_paquetes_compra
@@ -533,7 +533,7 @@ while True:
         ##############
         ## COMPRA ###
         ############
-        
+
         ### NUMERO DE PAQUETES DE COMPRA - DESCOMENTAR EN DEFINITIVOOOOOOOOOO
 #        if ((media_bidask > p40) and (media_bidask < p80)):
 #            n_paquetes_compra = 4
@@ -545,29 +545,31 @@ while True:
 #            n_paquetes_compra = 10
 #            stop_loss = 0.04
 #        elif (media_bidask <= p10):
-#            n_paquetes_compra = 5 * n_orders # Numero maximo de ordenes de compra en activo 
+#            n_paquetes_compra = 5 * n_orders # Numero maximo de ordenes de compra en activo
 #            stop_loss = 0.04
 #        else:
-#            n_paquetes_compra = 0 
+#            n_paquetes_compra = 0
 
 ##############################################
 #        Esto de debajo borrarlo en def
-        if (media_bidask > p80):           
+        if (media_bidask > p80):
             n_paquetes_compra = 0
         else:
-            n_paquetes_compra = 1
+            n_paquetes_compra = 2
+
+        n_orders_total = n_paquetes_compra * n_orders
 ##############################################
-            
+
         ############################################
-        
+
         disparador1 += 1 # para espaciar las compras que no las haga seguidas #####
         eur_disponibles_orden = round(float(precio_compra_bidask),2)*size_order_bidask
         ### COMENTAR Y/O DESCOMENTAR LINEAS para bloqueo limite superior
-        if ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and (disparador2 <= n_paquetes_compra) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))):  #### ---- cambiada
+        if ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))):  #### ---- cambiada
 #        if ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (eur_hold < n_eur_hold) and (media_bidask <= lim_sup_1) and (disparador1 >= ndisparador) and (disparador2 <= n_paquetes_compra) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))):  #### ---- original sin lim_sup
             disparador1 = 0 # Para espaciar las compras
             for i in range(n_orders):
-                if (disparador2 <= n_paquetes_compra):
+                if (disparador2 < n_orders_total):
                     if dif_bidask >= lim_dif_bidask:
                         precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-1, int(lim_dif_bidask*100))]),2)
                     else:
