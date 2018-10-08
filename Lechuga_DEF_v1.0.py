@@ -186,7 +186,7 @@ b = []
 final1 = 0
 comp = False
 cont = 0
-pag_historic = 100
+pag_historic = 50 #100
 print ('### Gathering Data... ')
 
 for i in tqdm.tqdm([10000000,1000000,100000,10000,1000,100]):
@@ -313,13 +313,13 @@ print ('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) t
 
 ## INITIAL RESET FOR VARIABLES
 n_orders = 2 # Para los aleatorios
-n_ciclos_to_cancel = 80
-ndisparador = 5 ##60 Tiempo en segundos o ciclos entre ordenes de compra #5
+n_ciclos_to_cancel = 60 #80
+ndisparador = 3 #5 ##60 Tiempo en segundos o ciclos entre ordenes de compra #5
 disparador1 = ndisparador ## Espaciado entre ordenes compras
 disparador2 = 0 ## Para el numero maximo de ordenes de compra, relacionado con n_paquetes_compra
 n_eur_hold = 25 # 800 # Estaba a 80... es el limite para limitar el numero de compras segun las ordenes de compra emitidas
-size_order_bidask = 0.1 # 0.5
-porcentaje_beneficio = 0.5 ## En %, es decir 0.6 significa 0.6% que es ademas cantidad recomendada 0.6%
+size_order_bidask = 0.2 # 0.5
+porcentaje_beneficio = 0.6 # 0.5 ## En %, es decir 0.6 significa 0.6% que es ademas cantidad recomendada 0.6%
 disp = 0 # Para ajustar historico
 disp1 = 0 # Para ajustar historico
 lim_dif_bidask = 0.03 # Dif_Bidask limite para hacer aleatorios o no.
@@ -535,27 +535,27 @@ while True:
         ############
 
         ### NUMERO DE PAQUETES DE COMPRA - DESCOMENTAR EN DEFINITIVOOOOOOOOOO
-#        if ((media_bidask > p40) and (media_bidask < p80)):
-#            n_paquetes_compra = 4
-#            stop_loss = 0.02
-#        elif ((media_bidask > p30) and (media_bidask <= p40)):
-#            n_paquetes_compra = 6
-#            stop_loss = 0.04
-#        elif ((media_bidask > p10) and (media_bidask <= p30)):
-#            n_paquetes_compra = 10
-#            stop_loss = 0.04
-#        elif (media_bidask <= p10):
-#            n_paquetes_compra = 5 * n_orders # Numero maximo de ordenes de compra en activo
-#            stop_loss = 0.04
-#        else:
-#            n_paquetes_compra = 0
+        if ((media_bidask > p40) and (media_bidask < p80)):
+            n_paquetes_compra = 1 #4
+            stop_loss = 0.02
+        elif ((media_bidask > p30) and (media_bidask <= p40)):
+            n_paquetes_compra = 2 #6
+            stop_loss = 0.04
+        elif ((media_bidask > p10) and (media_bidask <= p30)):
+            n_paquetes_compra = 3 #10
+            stop_loss = 0.04
+        elif (media_bidask <= p10):
+            n_paquetes_compra = 3 #5 * n_orders # Numero maximo de ordenes de compra en activo
+            stop_loss = 0.04
+        else:
+            n_paquetes_compra = 0
 
 ##############################################
 #        Esto de debajo borrarlo en def
-        if (media_bidask > p80):
-            n_paquetes_compra = 0
-        else:
-            n_paquetes_compra = 2
+#        if (media_bidask > p80):
+#            n_paquetes_compra = 0
+#        else:
+#            n_paquetes_compra = 2
 
         n_orders_total = n_paquetes_compra * n_orders
 ##############################################
