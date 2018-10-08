@@ -251,8 +251,8 @@ percent_sup = 30 # 70
 percent_inf = 100 - percent_sup
 lim_sup_1 = stats.scoreatpercentile(hist_df['ltc_eur'], percent_sup)
 lim_inf_1 = stats.scoreatpercentile(hist_df['ltc_eur'], percent_inf)
-p80 = stats.scoreatpercentile(hist_df['ltc_eur'], 80)
-p40 = stats.scoreatpercentile(hist_df['ltc_eur'], 40)
+p70 = stats.scoreatpercentile(hist_df['ltc_eur'], 70)
+p50 = stats.scoreatpercentile(hist_df['ltc_eur'], 50)
 p30 = stats.scoreatpercentile(hist_df['ltc_eur'], 30)
 p10 = stats.scoreatpercentile(hist_df['ltc_eur'], 10)
 fig1 = plt.figure(1)
@@ -319,7 +319,7 @@ disparador1 = ndisparador ## Espaciado entre ordenes compras
 disparador2 = 0 ## Para el numero maximo de ordenes de compra, relacionado con n_paquetes_compra
 n_eur_hold = 25 # 800 # Estaba a 80... es el limite para limitar el numero de compras segun las ordenes de compra emitidas
 size_order_bidask = 0.2 # 0.5
-porcentaje_beneficio = 0.6 # 0.5 ## En %, es decir 0.6 significa 0.6% que es ademas cantidad recomendada 0.6%
+porcentaje_beneficio = 0.7 # 0.5 ## En %, es decir 0.6 significa 0.6% que es ademas cantidad recomendada 0.6%
 disp = 0 # Para ajustar historico
 disp1 = 0 # Para ajustar historico
 lim_dif_bidask = 0.03 # Dif_Bidask limite para hacer aleatorios o no.
@@ -535,10 +535,10 @@ while True:
         ############
 
         ### NUMERO DE PAQUETES DE COMPRA - DESCOMENTAR EN DEFINITIVOOOOOOOOOO
-        if ((media_bidask > p40) and (media_bidask < p80)):
+        if ((media_bidask > p50) and (media_bidask < p70)):
             n_paquetes_compra = 1 #4
             stop_loss = 0.02
-        elif ((media_bidask > p30) and (media_bidask <= p40)):
+        elif ((media_bidask > p30) and (media_bidask <= p50)):
             n_paquetes_compra = 2 #6
             stop_loss = 0.04
         elif ((media_bidask > p10) and (media_bidask <= p30)):
@@ -552,7 +552,7 @@ while True:
 
 ##############################################
 #        Esto de debajo borrarlo en def
-#        if (media_bidask > p80):
+#        if (media_bidask > p70):
 #            n_paquetes_compra = 0
 #        else:
 #            n_paquetes_compra = 2
@@ -668,8 +668,8 @@ while True:
         if seg%300 == 0:
             lim_sup_1 = stats.scoreatpercentile(hist_margin, percent_sup)
             lim_inf_1 = stats.scoreatpercentile(hist_margin, percent_inf)
-            p80 = stats.scoreatpercentile(hist_margin, 80)
-            p40 = stats.scoreatpercentile(hist_margin, 40)
+            p70 = stats.scoreatpercentile(hist_margin, 70)
+            p50 = stats.scoreatpercentile(hist_margin, 50)
             p30 = stats.scoreatpercentile(hist_margin, 30)
             p10 = stats.scoreatpercentile(hist_margin, 10)
             fig1 = plt.figure(1)
