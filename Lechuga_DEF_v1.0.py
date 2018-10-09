@@ -55,7 +55,7 @@ import tqdm
 #from pandas_datareader import wb, DataReader
 #import wget
 
-hora_ejecucion = 12
+hora_ejecucion = 12 # time to stop and restart en utc --- +1 invierno +2 verano
 minuto_ejecucion = 55
 hora_inicio = datetime.datetime.utcnow()
 crypto = 'LTC-EUR'
@@ -314,12 +314,11 @@ print ('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) t
 ## INITIAL RESET FOR VARIABLES
 n_orders = 2 # Para los aleatorios
 n_ciclos_to_cancel = 60 #80
-ndisparador = 3 #5 ##60 Tiempo en segundos o ciclos entre ordenes de compra #5
+ndisparador = 2 #5 ##60 Tiempo en segundos o ciclos entre ordenes de compra #5
 disparador1 = ndisparador ## Espaciado entre ordenes compras
-disparador2 = 0 ## Para el numero maximo de ordenes de compra, relacionado con n_paquetes_compra
 n_eur_hold = 25 # 800 # Estaba a 80... es el limite para limitar el numero de compras segun las ordenes de compra emitidas
 size_order_bidask = 0.2 # 0.5
-porcentaje_beneficio = 0.7 # 0.5 ## En %, es decir 0.6 significa 0.6% que es ademas cantidad recomendada 0.6%
+porcentaje_beneficio = 0.6 # 0.5 ## En %, es decir 0.6 significa 0.6% que es ademas cantidad recomendada 0.6%
 disp = 0 # Para ajustar historico
 disp1 = 0 # Para ajustar historico
 lim_dif_bidask = 0.03 # Dif_Bidask limite para hacer aleatorios o no.
@@ -337,7 +336,7 @@ t_time=[]
 trigger1 = 0
 n_rapida_bidask = 4 #4 Cantidad recomendada
 n_lenta_bidask = 12 #12 Cantidad recomendada
-limit_dif_bidask = 0.31 #Diferencia o ǴAP Bid-Ask para lanzar orden compra RECOMENDADA 0.31
+limit_dif_bidask = 0.31 #Diferencia o ǴAP Bid-Ask para lanzar orden compra RECOMENDADA 0.31 - Distinto a LIM_DIF_BIDASK que es para los aleatorios
 alpha_rapida_bidask = 2.0/(n_rapida_bidask+1)
 alpha_lenta_bidask = 2.0/(n_lenta_bidask+1)
 precio_compra_bidask_ejecutado = []
@@ -359,6 +358,7 @@ except:
     ordenes_venta = {}
 #ordenes_compra = {}
 #ordenes_venta = {}
+disparador2 = len(ordenes_compra) ## Para el numero maximo de ordenes de compra, relacionado con n_paquetes_compra
 seriales = {}
 relacion_id_compra_venta = {}
 forze_venta=False
@@ -523,12 +523,16 @@ while True:
             expmediavar_lenta_bidask.pop(0)
 
         ## ALGORITMO VENTA CRYPTO
-        if ((dif_bidask >= 0.0001) and (dif_bidask <= lim_dif_bidask)):
-            precio_compra_bidask = "%.2f" %(float(bidask1['asks'][0][0])-0.01)
-            precio_venta_bidask = "%.2f" %(float(bidask1['bids'][0][0]))
-        else:
-            precio_compra_bidask = "%.2f" %(float(bidask1['bids'][0][0])+0.01)
-            precio_venta_bidask = "%.2f" %(float(bidask1['bids'][0][0]))
+#        if ((dif_bidask >= 0.0001) and (dif_bidask < 0.02)):
+#            precio_compra_bidask = "%.2f" %(float(bidask1['bids'][0][0])-0.01)
+#            precio_venta_bidask = "%.2f" %(float(bidask1['bids'][0][0]))
+#        elif ((dif_bidask >= 0.02) and (dif_bidask <= lim_dif_bidask)):
+#            precio_compra_bidask = "%.2f" %(float(bidask1['bids'][0][0]))
+#            precio_venta_bidask = "%.2f" %(float(bidask1['bids'][0][0]))
+#        else:
+
+        precio_compra_bidask = "%.2f" %(float(bidask1['bids'][0][0]))
+        precio_venta_bidask = "%.2f" %(float(bidask1['bids'][0][0]))
 
         ##############
         ## COMPRA ###
@@ -570,10 +574,10 @@ while True:
             disparador1 = 0 # Para espaciar las compras
             for i in range(n_orders):
                 if (disparador2 < n_orders_total):
-                    if dif_bidask >= lim_dif_bidask:
-                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-1, int(lim_dif_bidask*100))]),2)
+                    if dif_bidask > lim_dif_bidask:
+                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-2, int(lim_dif_bidask*100)+1)]),2)
                     else:
-                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-int(lim_dif_bidask*100) + 1, 1)]),2)
+                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-1, int(lim_dif_bidask*100))]),2)
                     order_buy = {
                     'product_id': crypto,
                     'side': 'buy',
