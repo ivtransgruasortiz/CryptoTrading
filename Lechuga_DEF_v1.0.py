@@ -358,7 +358,8 @@ except:
     ordenes_venta = {}
 #ordenes_compra = {}
 #ordenes_venta = {}
-disparador2 = len(ordenes_compra) ## Para el numero maximo de ordenes de compra, relacionado con n_paquetes_compra
+#disparador2 = len(ordenes_compra) ## Para el numero maximo de ordenes de compra, relacionado con n_paquetes_compra # Deprecated
+disparador2 = len([x for x in ordenes_compra if ordenes_compra[x]['estado_venta']=='filled'])
 seriales = {}
 relacion_id_compra_venta = {}
 forze_venta=False
@@ -425,11 +426,12 @@ while True:
             if item not in ids_lanzadas:
                 print('## ATTENTION!!##  SELL order %s EXECUTED in %s eur (for buy-order %s EXECUTED in %s eur)  ##' %(item, ordenes_venta[item]['precio_venta'], ordenes_venta[item]['id_compra'], ordenes_compra[ordenes_venta[item]['id_compra']]['precio_compra']))
                 ganancias.append(size_order_bidask*ordenes_venta[item]['precio_venta'] - size_order_bidask*ordenes_compra[ordenes_venta[item]['id_compra']]['precio_compra'])
+                ordenes_compra[ordenes_venta[item]['id_compra']]['estado_venta']='filled'
                 print ('\nGanancia operacion: %s eur.' %(ganancias[-1]))
                 print ('\nGanancia acumulada: %s eur. \n' %(sum(ganancias)))
 
 #                ######## WITHDRAWALS INTO COINBASE ACCOUNT ################
-#                r1b = rq.get(api_url + 'fills', auth = auth)
+#                r1b = rq.get(api_url + 'fills?product_id=' + crypto, auth = auth)
 #                ordenes_fill = r1b.json()
 #                beneficio = round((np.sum([float(x['size'])*float(x['price']) for x in ordenes_fill if x['order_id']==item])-np.sum([float(x['size'])*float(x['price']) for x in ordenes_fill if x['order_id']==ordenes_venta[item]['id_compra']])) - (np.sum([float(x['fee']) for x in ordenes_fill if x['order_id']==item])+np.sum([float(x['fee']) for x in ordenes_fill if x['order_id']==ordenes_venta[item]['id_compra']])),2)
 ##                r1c = rq.get(api_url + 'coinbase-accounts', auth = auth) ## 'coinbase-accounts' ## 'payment-methods'
