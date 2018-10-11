@@ -427,6 +427,7 @@ while True:
                 print('## ATTENTION!!##  SELL order %s EXECUTED in %s eur (for buy-order %s EXECUTED in %s eur)  ##' %(item, ordenes_venta[item]['precio_venta'], ordenes_venta[item]['id_compra'], ordenes_compra[ordenes_venta[item]['id_compra']]['precio_compra']))
                 ganancias.append(size_order_bidask*ordenes_venta[item]['precio_venta'] - size_order_bidask*ordenes_compra[ordenes_venta[item]['id_compra']]['precio_compra'])
                 ordenes_compra[ordenes_venta[item]['id_compra']]['estado_venta']='filled'
+                ordenes_venta[item]['estado_venta'] = 'filled'
                 print ('\nGanancia operacion: %s eur.' %(ganancias[-1]))
                 print ('\nGanancia acumulada: %s eur. \n' %(sum(ganancias)))
 
@@ -544,17 +545,21 @@ while True:
         if ((media_bidask > p50) and (media_bidask < p70)):
             n_paquetes_compra = 1 #4
             stop_loss = 0.02
+            rango = 'p50-p70'
         elif ((media_bidask > p30) and (media_bidask <= p50)):
             n_paquetes_compra = 2 #6
             stop_loss = 0.04
+            rango = 'p30-p50'
         elif ((media_bidask > p10) and (media_bidask <= p30)):
             n_paquetes_compra = 3 #10
             stop_loss = 0.04
         elif (media_bidask <= p10):
             n_paquetes_compra = 3 #5 * n_orders # Numero maximo de ordenes de compra en activo
             stop_loss = 0.04
+            rango = '<p10'
         else:
             n_paquetes_compra = 0
+            rango = '>p70'
 
 ##############################################
 #        Esto de debajo borrarlo en def
@@ -671,6 +676,7 @@ while True:
             print ('\nCiclo %s' %(seg))
             print ('%s Minutos' %(dif_min))
             print ('Last price = ' + str(round(media_bidask,2)) + ' eur/crypto')
+            print('Rango = ' + rango + '\n' + 'Paquetes de compra = ' + str(n_paquetes_compra))
         if seg%300 == 0:
             lim_sup_1 = stats.scoreatpercentile(hist_margin, percent_sup)
             lim_inf_1 = stats.scoreatpercentile(hist_margin, percent_inf)
