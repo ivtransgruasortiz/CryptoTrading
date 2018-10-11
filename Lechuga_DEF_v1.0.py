@@ -332,6 +332,7 @@ ltc_price=[]
 expmediavar_rapida_bidask = [expmediavar_rapida[-1]]
 expmediavar_lenta_bidask = [expmediavar_lenta[-1]]
 seg = 0
+rango = 'NotDefined'
 t_time=[]
 trigger1 = 0
 n_rapida_bidask = 4 #4 Cantidad recomendada
@@ -553,6 +554,7 @@ while True:
         elif ((media_bidask > p10) and (media_bidask <= p30)):
             n_paquetes_compra = 3 #10
             stop_loss = 0.04
+            rango = 'p10-p30'
         elif (media_bidask <= p10):
             n_paquetes_compra = 3 #5 * n_orders # Numero maximo de ordenes de compra en activo
             stop_loss = 0.04
@@ -581,8 +583,8 @@ while True:
             disparador1 = 0 # Para espaciar las compras
             for i in range(n_orders):
                 if (disparador2 < n_orders_total):
-                    if dif_bidask > lim_dif_bidask:
-                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-2, int(lim_dif_bidask*100)+1)]),2)
+                    if dif_bidask >= lim_dif_bidask:
+                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-2, int(lim_dif_bidask*100))]),2)
                     else:
                         precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-1, int(lim_dif_bidask*100))]),2)
                     order_buy = {
