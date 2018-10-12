@@ -584,9 +584,9 @@ while True:
             for i in range(n_orders):
                 if (disparador2 < n_orders_total):
                     if dif_bidask > lim_dif_bidask:
-                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-1, int(lim_dif_bidask*100))]),2)
+                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-2, int(lim_dif_bidask*100))]),2)
                     else:
-                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-1, int(dif_bidask*100))]),2)
+                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-2, int(dif_bidask*100)-1)]),2)
                     order_buy = {
                     'product_id': crypto,
                     'side': 'buy',
@@ -692,6 +692,17 @@ while True:
             print('\nLimite PRINCIPAL para limitar operaciones en  P%s = %s eur.' %(percent_sup, lim_sup_1) )
             print('\nLimite SECUNDARIO para limitar operaciones en P%s = %s eur.' %(percent_inf, lim_inf_1) )
 
+            ## Escribimos en un diccionario las ordenes de compra filled para leerlas en la sgte ejecucion del script #############
+            time.sleep(0.1)
+
+            with open('filess_compra.txt', 'w') as file:
+                 file.write(json.dumps(ordenes_compra)) # use `json.loads` to do the reverse
+
+            time.sleep(0.1)
+
+            with open('filess_venta.txt', 'w') as file:
+                 file.write(json.dumps(ordenes_venta))
+            ########################################################################################################################
 
         ## CALCULO DE TIEMPO Y PAUSA POR LIMITE CONEXION
 #        time.sleep(0.1)
