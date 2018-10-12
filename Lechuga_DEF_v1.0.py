@@ -583,10 +583,10 @@ while True:
             disparador1 = 0 # Para espaciar las compras
             for i in range(n_orders):
                 if (disparador2 < n_orders_total):
-                    if dif_bidask >= lim_dif_bidask:
-                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-2, int(lim_dif_bidask*100))]),2)
-                    else:
+                    if dif_bidask > lim_dif_bidask:
                         precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-1, int(lim_dif_bidask*100))]),2)
+                    else:
+                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-1, int(dif_bidask*100))]),2)
                     order_buy = {
                     'product_id': crypto,
                     'side': 'buy',
