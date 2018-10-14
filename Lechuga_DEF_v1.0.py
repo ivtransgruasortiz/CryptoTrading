@@ -186,7 +186,7 @@ b = []
 final1 = 0
 comp = False
 cont = 0
-pag_historic = 50 #100
+pag_historic = 150 #100
 print ('### Gathering Data... ')
 
 for i in tqdm.tqdm([10000000,1000000,100000,10000,1000,100]):
@@ -314,7 +314,7 @@ print ('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) t
 ## INITIAL RESET FOR VARIABLES
 n_orders = 2 # Para los aleatorios
 n_ciclos_to_cancel = 60 #80
-ndisparador = 2 #5 ##60 Tiempo en segundos o ciclos entre ordenes de compra #5
+ndisparador = 1 #5 ##60 Tiempo en segundos o ciclos entre ordenes de compra #5
 disparador1 = ndisparador ## Espaciado entre ordenes compras
 n_eur_hold = 25 # 800 # Estaba a 80... es el limite para limitar el numero de compras segun las ordenes de compra emitidas
 size_order_bidask = 0.2 # 0.5
@@ -350,17 +350,28 @@ n_ciclos_to_hist = 25 # 120 estaba inicialmente... número de ciclos para meter 
 ids_comp_vent = {}
 contadores = {}
 try:
-    ordenes_compra = json.load(open('filess_compra.txt','r'))
+    f = open('filess_compra.txt','r')
+    ordenes_compra = json.load(f)
+    if (ordenes_compra != {}):
+        print('\nHanging Purchases --> Yes \nDetails: ')
+        print('\n')
+        print(ordenes_compra)
+        print('\n')
+    else:
+        print('\nHanging Purchases --> No')
+        print('\n')
+
+    f.close()
 except:
     ordenes_compra = {}
 try:
-    ordenes_venta = json.load(open('filess_venta.txt','r'))
+    f = open('filess_venta.txt','r')
+    ordenes_venta = json.load(f)
+    f.close()
 except:
     ordenes_venta = {}
-#ordenes_compra = {}
-#ordenes_venta = {}
-#disparador2 = len(ordenes_compra) ## Para el numero maximo de ordenes de compra, relacionado con n_paquetes_compra # Deprecated
-disparador2 = len([x for x in ordenes_compra if ordenes_compra[x]['estado_venta']=='filled'])
+
+disparador2 = len([x for x in ordenes_compra if ordenes_compra[x]['estado_venta']==''])
 seriales = {}
 relacion_id_compra_venta = {}
 forze_venta=False
@@ -416,12 +427,12 @@ while True:
             except:
                 continue
         except:
-            time.sleep(0.2)
+            time.sleep(0.1)
             continue #pass
         try:
             ids_lanzadas = [x['id'] for x in ordenes_lanzadas] ## pone compra pero incluye compra y venta
         except:
-            time.sleep(0.2)
+            time.sleep(0.1)
             continue #pass
         for item in ordenes_venta.keys():
             if item not in ids_lanzadas:
@@ -475,7 +486,7 @@ while True:
             except:
                 continue
         except:
-            time.sleep(0.2)
+            time.sleep(0.1)
             continue #pass
         ######################################################################
         ## Initial disponibilities in my account #######################
@@ -486,7 +497,7 @@ while True:
             ltc_hold = float([x['hold'] for x in account1 if x['currency']=='LTC'][0])
             ltc_avai = float([x['available'] for x in account1 if x['currency']=='LTC'][0])
         except:
-            time.sleep(0.2)
+            time.sleep(0.1)
             continue #pass
         ######################################################################
         ## bid-ask READINGS ##########################################################
@@ -504,7 +515,7 @@ while True:
                 continue
             dif_bidask = float(bidask1['asks'][0][0])-float(bidask1['bids'][0][0])
         except:
-            time.sleep(0.2)
+            time.sleep(0.1)
             continue #pass
 
         ### OPERATIVA ###
@@ -584,9 +595,9 @@ while True:
             for i in range(n_orders):
                 if (disparador2 < n_orders_total):
                     if dif_bidask > lim_dif_bidask:
-                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-2, int(lim_dif_bidask*100))]),2)
+                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-2, int(lim_dif_bidask*100)-1)]),2)
                     else:
-                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-2, int(dif_bidask*100)-1)]),2)
+                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-3, 1)]),2)
                     order_buy = {
                     'product_id': crypto,
                     'side': 'buy',
@@ -679,6 +690,17 @@ while True:
             print ('%s Minutos' %(dif_min))
             print ('Last price = ' + str(round(media_bidask,2)) + ' eur/crypto')
             print('Rango = ' + rango + '\n' + 'Paquetes de compra = ' + str(n_paquetes_compra))
+            ## Escribimos en un diccionario las ordenes de compra filled para leerlas en la sgte ejecucion del script #############
+            with open('filess_compra.txt', 'w') as file:
+                file.write(json.dumps(ordenes_compra)) # use `json.loads` to do the reverse
+                file.close()
+
+            time.sleep(0.1)
+
+            with open('filess_venta.txt', 'w') as file:
+                file.write(json.dumps(ordenes_venta))
+                file.close()
+
         if seg%300 == 0:
             lim_sup_1 = stats.scoreatpercentile(hist_margin, percent_sup)
             lim_inf_1 = stats.scoreatpercentile(hist_margin, percent_inf)
@@ -692,16 +714,6 @@ while True:
             print('\nLimite PRINCIPAL para limitar operaciones en  P%s = %s eur.' %(percent_sup, lim_sup_1) )
             print('\nLimite SECUNDARIO para limitar operaciones en P%s = %s eur.' %(percent_inf, lim_inf_1) )
 
-            ## Escribimos en un diccionario las ordenes de compra filled para leerlas en la sgte ejecucion del script #############
-            time.sleep(0.1)
-
-            with open('filess_compra.txt', 'w') as file:
-                 file.write(json.dumps(ordenes_compra)) # use `json.loads` to do the reverse
-
-            time.sleep(0.1)
-
-            with open('filess_venta.txt', 'w') as file:
-                 file.write(json.dumps(ordenes_venta))
             ########################################################################################################################
 
         ## CALCULO DE TIEMPO Y PAUSA POR LIMITE CONEXION
@@ -718,7 +730,8 @@ while True:
 
     except (KeyboardInterrupt, SystemExit): # ctrl + c
         print ('All done')
-        break
+        raise
+        #break
         # ALSO VALID "raise"
 
 ## CANCEL/EXECUTE ORDERS FOR OPEN ORDERS DURING RUN-TIME EXECUTION
@@ -741,8 +754,10 @@ for item in ordenes_compra_open_nofilled:
 ## Escribimos en un diccionario las ordenes de compra filled para leerlas en la sgte ejecucion del script
 with open('filess_compra.txt', 'w') as file:
      file.write(json.dumps(ordenes_compra)) # use `json.loads` to do the reverse
+     file.close()
 with open('filess_venta.txt', 'w') as file:
      file.write(json.dumps(ordenes_venta))
+     file.close()
 
 
 ######################################################################################################################################################################################################################################################################################################################################################
