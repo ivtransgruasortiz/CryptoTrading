@@ -714,6 +714,38 @@ while True:
             print('\nLimite PRINCIPAL para limitar operaciones en  P%s = %s eur.' %(percent_sup, lim_sup_1) )
             print('\nLimite SECUNDARIO para limitar operaciones en P%s = %s eur.' %(percent_inf, lim_inf_1) )
 
+            ## LOG ARCHIVE CREATION FROM GDAX API - NEW!!
+            ## Fecha y hora final del codigo
+            fecha_fin = datetime.datetime.utcnow()
+            fecha_fin = unicode(datetime.datetime.strftime(fecha_fin, '%Y-%m-%dT%H:%M:%S.%fZ'))
+            fecha_fin = time.strptime(fecha_fin, '%Y-%m-%dT%H:%M:%S.%fZ')
+            n_pag = 1
+            lista_final = []
+            for i in range(n_pag):
+                exec("r_%s = rq.get(api_url + 'fills/?product_id=%s', auth = auth)" %(i, crypto))
+                exec("fills%s = r_%s.json()" %(i,i))
+                exec("lista_final.extend(fills%s)" %(i))
+
+            log_dataframe = pd.DataFrame(lista_final)
+            log_dataframe = log_dataframe[['created_at', 'liquidity', 'order_id', 'product_id', 'profile_id', 'settled', 'trade_id', 'user_id', 'side', 'size', 'price', 'fee']]
+            log_dataframe = log_dataframe.sort_values(by = 'created_at')
+            log_dataframe = log_dataframe.reset_index().iloc[:,1:]
+
+            comparador_fechas = compare_dates(log_dataframe['created_at'].values,fecha_ini,fecha_fin)
+            log_dataframe = log_dataframe[comparador_fechas]
+
+            try:
+                log_dataframe['operation_value_with_fees'] = np.vectorize(valor_op)(log_dataframe['side'], log_dataframe['size'], log_dataframe['price'], log_dataframe['fee'])
+                log_dataframe['serial'] = np.vectorize(assign_serial)(log_dataframe['order_id'], seriales)
+                ganancia = sum(log_dataframe['operation_value_with_fees'])-sum(log_dataframe['fee'].astype('float64'))
+                if system == 'linux2':
+                    log_dataframe.to_csv('log_%s.csv' %(str(fecha_ini[0])+str(fecha_ini[1])+str(fecha_ini[2])), sep = ';')
+                else:
+                    name_fich_df = 'log_dataframe.csv'
+                    log_dataframe.to_csv(name_fich_df, sep = ';')
+            except:
+                pass
+
             ########################################################################################################################
 
         ## CALCULO DE TIEMPO Y PAUSA POR LIMITE CONEXION
