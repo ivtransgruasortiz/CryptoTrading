@@ -313,12 +313,12 @@ print ('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) t
 
 ## INITIAL RESET FOR VARIABLES
 n_orders = 2 # Para los aleatorios
-n_ciclos_to_cancel = 60 #80
+n_ciclos_to_cancel = 30 #80
 ndisparador = 1 #5 ##60 Tiempo en segundos o ciclos entre ordenes de compra #5
 disparador1 = ndisparador ## Espaciado entre ordenes compras
-n_eur_hold = 25 # 800 # Estaba a 80... es el limite para limitar el numero de compras segun las ordenes de compra emitidas
+n_eur_hold = 100 # 800 # Estaba a 80... es el limite para limitar el numero de compras segun las ordenes de compra emitidas
 size_order_bidask = 0.2 # 0.5
-porcentaje_beneficio = 0.6 # 0.5 ## En %, es decir 0.6 significa 0.6% que es ademas cantidad recomendada 0.6%
+porcentaje_beneficio = 1.8 # 0.5 ## En %, es decir 0.6 significa 0.6% que es ademas cantidad recomendada 0.6%
 disp = 0 # Para ajustar historico
 disp1 = 0 # Para ajustar historico
 lim_dif_bidask = 0.03 # Dif_Bidask limite para hacer aleatorios o no.
@@ -346,7 +346,7 @@ ganancias = []
 list_trades_id = []
 n_precios_hist = len(hist_df) # Longitud de lista de valores para calcular el hist y actualizar el valor máximo
 hist_margin = np.around(list(hist_df['ltc_eur'][-n_precios_hist-1:-1].values),2) # vector de precios pasados al que agregar los nuevos precios y que nos sirva para establecer nuevos límites a la compra...
-n_ciclos_to_hist = 25 # 120 estaba inicialmente... número de ciclos para meter ultima orden en hist para calcular limite de operacion
+n_ciclos_to_hist = 50 # 120 estaba inicialmente... número de ciclos para meter ultima orden en hist para calcular limite de operacion
 ids_comp_vent = {}
 contadores = {}
 try:
@@ -753,17 +753,17 @@ while True:
 #        elapsed_time = time.time() - start_time
 #        print("Elapsed time: %.10f seconds." % elapsed_time)
 
-        ## PARA EJECUCION DIARIA INTERRUPT
-        if seg%120 == 0:
-            hora_fin = datetime.datetime.utcnow()
-            if ((hora_fin.day > hora_inicio.day) and (hora_fin.hour >= hora_ejecucion) and (hora_fin.minute >= minuto_ejecucion)):
-                print ('All done')
-                break
+        ## PARA EJECUCION DIARIA INTERRUPT -- Commented for non-interrupt execution in pythonanywhere
+#        if seg%120 == 0:
+#            hora_fin = datetime.datetime.utcnow()
+#            if ((hora_fin.day > hora_inicio.day) and (hora_fin.hour >= hora_ejecucion) and (hora_fin.minute >= minuto_ejecucion)):
+#                print ('All done')
+#                break
 
     except (KeyboardInterrupt, SystemExit): # ctrl + c
         print ('All done')
-        raise
-        #break
+        #raise
+        break
         # ALSO VALID "raise"
 
 ## CANCEL/EXECUTE ORDERS FOR OPEN ORDERS DURING RUN-TIME EXECUTION
@@ -975,3 +975,4 @@ except:
 #     file.write(json.dumps(account1)) # use `json.loads` to do the reverse
 #filees = open('filess.txt','r')
 #ordenes_compra = json.load(filees)
+
