@@ -523,6 +523,13 @@ while True:
         ### OPERATIVA REAL CON BID-ASK ###
         ###############################################
         precio_bidask.append(media_bidask)
+        if len(precio_bidask) <= 5000:
+            trigg_oportunidad = False
+            elif ((precio_bidask[5000]-precio_bidask[-1]) > (0.02*precio_bidask[5000])):
+                trigg_oportunidad = True
+        else:
+            trigg_oportunidad = False
+
         if (len(precio_bidask) > (n_lenta_bidask + 10000)):
             precio_bidask.pop(0)
         expmediavar_rapida_bidask.append(ema(n_rapida_bidask,precio_bidask, 2.0/(n_rapida_bidask+1), expmediavar_rapida_bidask))
@@ -589,7 +596,7 @@ while True:
         disparador1 += 1 # para espaciar las compras que no las haga seguidas #####
         eur_disponibles_orden = round(float(precio_compra_bidask),2)*size_order_bidask
         ### COMENTAR Y/O DESCOMENTAR LINEAS para bloqueo limite superior
-        if ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))):  #### ---- cambiada
+        if ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (trigg_oportunidad = True) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))):  #### ---- cambiada
 #        if ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (eur_hold < n_eur_hold) and (media_bidask <= lim_sup_1) and (disparador1 >= ndisparador) and (disparador2 <= n_paquetes_compra) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))):  #### ---- original sin lim_sup
             disparador1 = 0 # Para espaciar las compras
             for i in range(n_orders):
