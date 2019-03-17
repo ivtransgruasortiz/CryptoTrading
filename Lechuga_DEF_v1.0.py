@@ -312,17 +312,17 @@ print ('\n### Data OK! ###')
 print ('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) to cancel and view results')
 
 ## INITIAL RESET FOR VARIABLES
-n_orders = 2 # Para los aleatorios
+n_orders = 3 # Para los aleatorios
 n_ciclos_to_cancel = 30 #80
 ndisparador = 1 #5 ##60 Tiempo en segundos o ciclos entre ordenes de compra #5
 disparador1 = ndisparador ## Espaciado entre ordenes compras
-n_eur_hold = 100 # 800 # Estaba a 80... es el limite para limitar el numero de compras segun las ordenes de compra emitidas
+n_eur_hold = 120 # 800 # Estaba a 80... es el limite para limitar el numero de compras segun las ordenes de compra emitidas
 size_order_bidask = 0.2 # 0.5
-porcentaje_beneficio = 1.8 # 0.5 ## En %, es decir 0.6 significa 0.6% que es ademas cantidad recomendada 0.6%
+porcentaje_beneficio = 1.6 # 0.5 ## En %, es decir 0.6 significa 0.6% que es ademas cantidad recomendada 0.6%
 disp = 0 # Para ajustar historico
 disp1 = 0 # Para ajustar historico
 lim_dif_bidask = 0.03 # Dif_Bidask limite para hacer aleatorios o no.
-stop_loss = 0.04
+stop_loss = 0.06
 serial_number = 1 # Para relacionar las ordenes de compra-venta
 
 precio=[]
@@ -336,7 +336,7 @@ rango = 'NotDefined'
 t_time=[]
 trigger1 = 0
 n_rapida_bidask = 4 #4 Cantidad recomendada
-n_lenta_bidask = 12 #12 Cantidad recomendada
+n_lenta_bidask = 16 #12 Cantidad recomendada
 limit_dif_bidask = 0.31 #Diferencia o ǴAP Bid-Ask para lanzar orden compra RECOMENDADA 0.31 - Distinto a LIM_DIF_BIDASK que es para los aleatorios
 alpha_rapida_bidask = 2.0/(n_rapida_bidask+1)
 alpha_lenta_bidask = 2.0/(n_lenta_bidask+1)
@@ -523,10 +523,10 @@ while True:
         ### OPERATIVA REAL CON BID-ASK ###
         ###############################################
         precio_bidask.append(media_bidask)
-        if len(precio_bidask) <= 5000:
+        if len(precio_bidask) <= 9900:
             trigg_oportunidad = False
-            elif ((precio_bidask[5000]-precio_bidask[-1]) > (0.02*precio_bidask[5000])):
-                trigg_oportunidad = True
+        elif ((precio_bidask[9900]-precio_bidask[-1]) > (0.02*precio_bidask[9900])):
+            trigg_oportunidad = True
         else:
             trigg_oportunidad = False
 
@@ -562,23 +562,23 @@ while True:
 
         ### NUMERO DE PAQUETES DE COMPRA - DESCOMENTAR EN DEFINITIVOOOOOOOOOO
         if ((media_bidask > p50) and (media_bidask < p70)):
-            n_paquetes_compra = 1 #4
-            stop_loss = 0.02
+            n_paquetes_compra = 2 #4
+            stop_loss = 0.06
             rango = 'p50-p70'
         elif ((media_bidask > p30) and (media_bidask <= p50)):
-            n_paquetes_compra = 2 #6
-            stop_loss = 0.04
+            n_paquetes_compra = 3 #6
+            stop_loss = 0.06
             rango = 'p30-p50'
         elif ((media_bidask > p10) and (media_bidask <= p30)):
-            n_paquetes_compra = 3 #10
-            stop_loss = 0.04
+            n_paquetes_compra = 4 #10
+            stop_loss = 0.06
             rango = 'p10-p30'
         elif (media_bidask <= p10):
-            n_paquetes_compra = 3 #5 * n_orders # Numero maximo de ordenes de compra en activo
-            stop_loss = 0.04
+            n_paquetes_compra = 5 #5 * n_orders # Numero maximo de ordenes de compra en activo
+            stop_loss = 0.08
             rango = '<p10'
         else:
-            n_paquetes_compra = 0
+            n_paquetes_compra = 1
             rango = '>p70'
 
 ##############################################
@@ -596,7 +596,7 @@ while True:
         disparador1 += 1 # para espaciar las compras que no las haga seguidas #####
         eur_disponibles_orden = round(float(precio_compra_bidask),2)*size_order_bidask
         ### COMENTAR Y/O DESCOMENTAR LINEAS para bloqueo limite superior
-        if ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (trigg_oportunidad = True) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))):  #### ---- cambiada
+        if (((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))) or ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (trigg_oportunidad == True) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask))):  #### ---- cambiada
 #        if ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (eur_hold < n_eur_hold) and (media_bidask <= lim_sup_1) and (disparador1 >= ndisparador) and (disparador2 <= n_paquetes_compra) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))):  #### ---- original sin lim_sup
             disparador1 = 0 # Para espaciar las compras
             for i in range(n_orders):
@@ -720,6 +720,7 @@ while True:
             plt.show()
             print('\nLimite PRINCIPAL para limitar operaciones en  P%s = %s eur.' %(percent_sup, lim_sup_1) )
             print('\nLimite SECUNDARIO para limitar operaciones en P%s = %s eur.' %(percent_inf, lim_inf_1) )
+            print(trigg_oportunidad)
 
             ## LOG ARCHIVE CREATION FROM GDAX API - NEW!!
             ## Fecha y hora final del codigo
@@ -982,4 +983,3 @@ except:
 #     file.write(json.dumps(account1)) # use `json.loads` to do the reverse
 #filees = open('filess.txt','r')
 #ordenes_compra = json.load(filees)
-
