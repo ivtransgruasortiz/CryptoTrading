@@ -186,7 +186,7 @@ b = []
 final1 = 0
 comp = False
 cont = 0
-pag_historic = 150 #100
+pag_historic = 300 #100
 print ('### Gathering Data... ')
 
 for i in tqdm.tqdm([10000000,1000000,100000,10000,1000,100]):
@@ -313,7 +313,7 @@ print ('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) t
 
 ## INITIAL RESET FOR VARIABLES
 n_orders = 3 # Para los aleatorios
-n_ciclos_to_cancel = 30 #80
+n_ciclos_to_cancel = 50 #80
 ndisparador = 1 #5 ##60 Tiempo en segundos o ciclos entre ordenes de compra #5
 disparador1 = ndisparador ## Espaciado entre ordenes compras
 n_eur_hold = 120 # 800 # Estaba a 80... es el limite para limitar el numero de compras segun las ordenes de compra emitidas
@@ -346,7 +346,7 @@ ganancias = []
 list_trades_id = []
 n_precios_hist = len(hist_df) # Longitud de lista de valores para calcular el hist y actualizar el valor máximo
 hist_margin = np.around(list(hist_df['ltc_eur'][-n_precios_hist-1:-1].values),2) # vector de precios pasados al que agregar los nuevos precios y que nos sirva para establecer nuevos límites a la compra...
-n_ciclos_to_hist = 50 # 120 estaba inicialmente... número de ciclos para meter ultima orden en hist para calcular limite de operacion
+n_ciclos_to_hist = 120 # 120 estaba inicialmente... número de ciclos para meter ultima orden en hist para calcular limite de operacion
 ids_comp_vent = {}
 contadores = {}
 try:
@@ -523,14 +523,14 @@ while True:
         ### OPERATIVA REAL CON BID-ASK ###
         ###############################################
         precio_bidask.append(media_bidask)
-        if len(precio_bidask) <= 9900:
+        if len(precio_bidask) <= 5000:
             trigg_oportunidad = False
-        elif ((precio_bidask[9900]-precio_bidask[-1]) > (0.02*precio_bidask[9900])):
+        elif ((precio_bidask[5000]-precio_bidask[-1]) > (0.02*precio_bidask[5000])):
             trigg_oportunidad = True
         else:
             trigg_oportunidad = False
 
-        if (len(precio_bidask) > (n_lenta_bidask + 10000)):
+        if (len(precio_bidask) > (n_lenta_bidask + 50000)):
             precio_bidask.pop(0)
         expmediavar_rapida_bidask.append(ema(n_rapida_bidask,precio_bidask, 2.0/(n_rapida_bidask+1), expmediavar_rapida_bidask))
         expmediavar_lenta_bidask.append(ema(n_lenta_bidask,precio_bidask, 2.0/(n_lenta_bidask+1), expmediavar_lenta_bidask))
@@ -539,9 +539,9 @@ while True:
             expmediavar_lenta_bidask = [expmediavar_lenta_bidask[1]]
             disp1 = 1
 
-        if (len(expmediavar_rapida_bidask) > (n_lenta_bidask + 10000)):
+        if (len(expmediavar_rapida_bidask) > (n_lenta_bidask + 50000)):
             expmediavar_rapida_bidask.pop(0)
-        if (len(expmediavar_lenta_bidask) > (n_lenta_bidask + 10000)):
+        if (len(expmediavar_lenta_bidask) > (n_lenta_bidask + 50000)):
             expmediavar_lenta_bidask.pop(0)
 
         ## ALGORITMO VENTA CRYPTO
@@ -562,7 +562,7 @@ while True:
 
         ### NUMERO DE PAQUETES DE COMPRA - DESCOMENTAR EN DEFINITIVOOOOOOOOOO
         if ((media_bidask > p50) and (media_bidask < p70)):
-            n_paquetes_compra = 2 #4
+            n_paquetes_compra = 1 #4
             stop_loss = 0.06
             rango = 'p50-p70'
         elif ((media_bidask > p30) and (media_bidask <= p50)):
@@ -570,7 +570,7 @@ while True:
             stop_loss = 0.06
             rango = 'p30-p50'
         elif ((media_bidask > p10) and (media_bidask <= p30)):
-            n_paquetes_compra = 4 #10
+            n_paquetes_compra = 3 #10
             stop_loss = 0.06
             rango = 'p10-p30'
         elif (media_bidask <= p10):
