@@ -186,7 +186,7 @@ b = []
 final1 = 0
 comp = False
 cont = 0
-pag_historic = 300 #100
+pag_historic = 500 #100
 print ('### Gathering Data... ')
 
 for i in tqdm.tqdm([10000000,1000000,100000,10000,1000,100]):
@@ -346,7 +346,7 @@ ganancias = []
 list_trades_id = []
 n_precios_hist = len(hist_df) # Longitud de lista de valores para calcular el hist y actualizar el valor máximo
 hist_margin = np.around(list(hist_df['ltc_eur'][-n_precios_hist-1:-1].values),2) # vector de precios pasados al que agregar los nuevos precios y que nos sirva para establecer nuevos límites a la compra...
-n_ciclos_to_hist = 120 # 120 estaba inicialmente... número de ciclos para meter ultima orden en hist para calcular limite de operacion
+n_ciclos_to_hist = 180 # 120 estaba inicialmente... número de ciclos para meter ultima orden en hist para calcular limite de operacion
 ids_comp_vent = {}
 contadores = {}
 try:
@@ -530,6 +530,15 @@ while True:
         else:
             trigg_oportunidad = False
 
+        ### prueba #############################################################################
+        if len(precio_bidask) <= 10000:
+            trigg_oportunidad2 = False
+        elif ((precio_bidask[10000]-precio_bidask[-1]) > (0.01*precio_bidask[10000])):
+            trigg_oportunidad2 = True
+        else:
+            trigg_oportunidad2 = False
+        #####################################################################################
+
         if (len(precio_bidask) > (n_lenta_bidask + 50000)):
             precio_bidask.pop(0)
         expmediavar_rapida_bidask.append(ema(n_rapida_bidask,precio_bidask, 2.0/(n_rapida_bidask+1), expmediavar_rapida_bidask))
@@ -562,7 +571,7 @@ while True:
 
         ### NUMERO DE PAQUETES DE COMPRA - DESCOMENTAR EN DEFINITIVOOOOOOOOOO
         if ((media_bidask > p50) and (media_bidask < p70)):
-            n_paquetes_compra = 1 #4
+            n_paquetes_compra = 2 #4
             stop_loss = 0.06
             rango = 'p50-p70'
         elif ((media_bidask > p30) and (media_bidask <= p50)):
@@ -578,7 +587,7 @@ while True:
             stop_loss = 0.08
             rango = '<p10'
         else:
-            n_paquetes_compra = 1
+            n_paquetes_compra = 0
             rango = '>p70'
 
 ##############################################
@@ -596,8 +605,22 @@ while True:
         disparador1 += 1 # para espaciar las compras que no las haga seguidas #####
         eur_disponibles_orden = round(float(precio_compra_bidask),2)*size_order_bidask
         ### COMENTAR Y/O DESCOMENTAR LINEAS para bloqueo limite superior
-        if (((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))) or ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (trigg_oportunidad == True) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask))):  #### ---- cambiada
-#        if ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (eur_hold < n_eur_hold) and (media_bidask <= lim_sup_1) and (disparador1 >= ndisparador) and (disparador2 <= n_paquetes_compra) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))):  #### ---- original sin lim_sup
+
+#        regla_inicio_disponibilidad_eur = (seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden)
+#        regla_eur_comprometidos = (eur_hold < n_eur_hold)
+ #       regla_limites_orders = (disparador1 >= ndisparador) and (disparador2 < n_orders_total)
+  #      regla_dif_bidask = (dif_bidask < limit_dif_bidask)
+   #     regla_medias_exp_compra = (expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1])
+    #    regla_oportunidad = (trigg_oportunidad == True)
+
+     #   cond1 = regla_inicio_disponibilidad_eur and regla_eur_comprometidos and regla_limites_orders and regla_dif_bidask and regla_medias_exp_compra
+      #  cond2 = regla_inicio_disponibilidad_eur and regla_eur_comprometidos and regla_limites_orders and regla_dif_bidask and regla_oportunidad
+
+       # if ((cond1) or (cond2)):
+        if (((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and
+            (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and
+            (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))) or ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and
+            (trigg_oportunidad == True) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask))):  #### ---- cambiada
             disparador1 = 0 # Para espaciar las compras
             for i in range(n_orders):
                 if (disparador2 < n_orders_total):
@@ -634,6 +657,7 @@ while True:
         ### VENTA ###
         ##############
         for item in ordenes_compra.keys():
+
             if((ordenes_compra[item]['precio_compra']-precio_bidask[-1]) >= (stop_loss*ordenes_compra[item]['precio_compra'])):
                 forze_venta=True
                 percent_sup = 1
@@ -721,6 +745,7 @@ while True:
             print('\nLimite PRINCIPAL para limitar operaciones en  P%s = %s eur.' %(percent_sup, lim_sup_1) )
             print('\nLimite SECUNDARIO para limitar operaciones en P%s = %s eur.' %(percent_inf, lim_inf_1) )
             print(trigg_oportunidad)
+            print(trigg_oportunidad2)
 
             ## LOG ARCHIVE CREATION FROM GDAX API - NEW!!
             ## Fecha y hora final del codigo
