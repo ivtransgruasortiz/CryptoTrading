@@ -186,7 +186,7 @@ b = []
 final1 = 0
 comp = False
 cont = 0
-pag_historic = 1000 #100
+pag_historic = 1500 #1000
 print ('### Gathering Data... ')
 
 for i in tqdm.tqdm([10000000,1000000,100000,10000,1000,100]):
@@ -660,17 +660,36 @@ while True:
         ##############
         ### VENTA ###
         ##############
+
+#        for item in ordenes_compra.keys():
+
+ #           if((ordenes_compra[item]['precio_compra']-precio_bidask[-1]) >= (stop_loss*ordenes_compra[item]['precio_compra'])):
+  #              forze_venta=True
+   #             percent_sup = 1
+    #        else:
+     #           forze_venta=False
+
+      #      if ((ordenes_compra[item]['estado_venta']=='') and (ordenes_compra[item]['estado_compra']=='filled')):
+       #         #if (((seg > n_lenta_bidask) and (ltc_avai >= size_order_bidask) and (disparador2 > 0) and (round(float(precio_venta_bidask),2) >= ((1+(porcentaje_beneficio/100))*ordenes_compra[item]['precio_compra'])) and ((expmediavar_rapida_bidask[-2] >= expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] < expmediavar_lenta_bidask[-1]))) or (forze_venta==True)):
+        #        if (((seg > n_lenta_bidask) and (ltc_avai >= size_order_bidask) and (round(float(precio_venta_bidask),2) >= ((1+(porcentaje_beneficio/100))*ordenes_compra[item]['precio_compra'])) and ((expmediavar_rapida_bidask[-2] >= expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] < expmediavar_lenta_bidask[-1]))) or (forze_venta==True)):  ## disparador2 cancelled
+
         for item in ordenes_compra.keys():
 
-            if((ordenes_compra[item]['precio_compra']-precio_bidask[-1]) >= (stop_loss*ordenes_compra[item]['precio_compra'])):
+            regla_stoploss = ((ordenes_compra[item]['precio_compra']-precio_bidask[-1]) >= (stop_loss*ordenes_compra[item]['precio_compra']))
+            regla_estado = ((ordenes_compra[item]['estado_venta']=='') and (ordenes_compra[item]['estado_compra']=='filled'))
+            regla_disponibilidad_crypto = ((seg > n_lenta_bidask) and (ltc_avai >= size_order_bidask))
+            regla_beneficio = (round(float(precio_venta_bidask),2) >= ((1+(porcentaje_beneficio/100))*ordenes_compra[item]['precio_compra']))
+            regla_medias_exp_venta = ((expmediavar_rapida_bidask[-2] >= expmediavar_lenta_bidask[-2]) and
+                (expmediavar_rapida_bidask[-1] < expmediavar_lenta_bidask[-1]))
+
+            if regla_stoploss:
                 forze_venta=True
                 percent_sup = 1
             else:
                 forze_venta=False
 
-            if ((ordenes_compra[item]['estado_venta']=='') and (ordenes_compra[item]['estado_compra']=='filled')):
-                #if (((seg > n_lenta_bidask) and (ltc_avai >= size_order_bidask) and (disparador2 > 0) and (round(float(precio_venta_bidask),2) >= ((1+(porcentaje_beneficio/100))*ordenes_compra[item]['precio_compra'])) and ((expmediavar_rapida_bidask[-2] >= expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] < expmediavar_lenta_bidask[-1]))) or (forze_venta==True)):
-                if (((seg > n_lenta_bidask) and (ltc_avai >= size_order_bidask) and (round(float(precio_venta_bidask),2) >= ((1+(porcentaje_beneficio/100))*ordenes_compra[item]['precio_compra'])) and ((expmediavar_rapida_bidask[-2] >= expmediavar_lenta_bidask[-2]) and (expmediavar_rapida_bidask[-1] < expmediavar_lenta_bidask[-1]))) or (forze_venta==True)):  ## disparador2 cancelled
+            if regla_estado:
+                if ((regla_disponibilidad_crypto and regla_beneficio and regla_medias_exp_venta) or (forze_venta == True)):  ## disparador2 cancelled
                     order_sell = {
                     'product_id': crypto,
                     'side': 'sell',
