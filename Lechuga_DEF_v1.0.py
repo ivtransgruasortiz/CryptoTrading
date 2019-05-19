@@ -186,7 +186,7 @@ b = []
 final1 = 0
 comp = False
 cont = 0
-pag_historic = 1500 #1000
+pag_historic = 3000 #1000
 print ('### Gathering Data... ')
 
 for i in tqdm.tqdm([10000000,1000000,100000,10000,1000,100]):
@@ -322,7 +322,7 @@ porcentaje_beneficio = 1.6 # 0.5 ## En %, es decir 0.6 significa 0.6% que es ade
 disp = 0 # Para ajustar historico
 disp1 = 0 # Para ajustar historico
 lim_dif_bidask = 0.03 # Dif_Bidask limite para hacer aleatorios o no.
-stop_loss = 0.06
+stop_loss = 0.04
 serial_number = 1 # Para relacionar las ordenes de compra-venta
 
 precio=[]
@@ -335,8 +335,8 @@ seg = 0
 rango = 'NotDefined'
 t_time=[]
 trigger1 = 0
-n_rapida_bidask = 4 #4 Cantidad recomendada
-n_lenta_bidask = 16 #12 Cantidad recomendada
+n_rapida_bidask = 120 #4 Cantidad recomendada
+n_lenta_bidask = 360 #12 Cantidad recomendada
 limit_dif_bidask = 0.31 #Diferencia o ǴAP Bid-Ask para lanzar orden compra RECOMENDADA 0.31 - Distinto a LIM_DIF_BIDASK que es para los aleatorios
 alpha_rapida_bidask = 2.0/(n_rapida_bidask+1)
 alpha_lenta_bidask = 2.0/(n_lenta_bidask+1)
@@ -346,7 +346,7 @@ ganancias = []
 list_trades_id = []
 n_precios_hist = len(hist_df) # Longitud de lista de valores para calcular el hist y actualizar el valor máximo
 hist_margin = np.around(list(hist_df['ltc_eur'][-n_precios_hist-1:-1].values),2) # vector de precios pasados al que agregar los nuevos precios y que nos sirva para establecer nuevos límites a la compra...
-n_ciclos_to_hist = 180 # 120 estaba inicialmente... número de ciclos para meter ultima orden en hist para calcular limite de operacion
+n_ciclos_to_hist = 120 # 120 estaba inicialmente... número de ciclos para meter ultima orden en hist para calcular limite de operacion
 ids_comp_vent = {}
 contadores = {}
 try:
@@ -371,7 +371,13 @@ try:
 except:
     ordenes_venta = {}
 
-disparador2 = len([x for x in ordenes_compra if ordenes_compra[x]['estado_venta']==''])
+## Iniciación disparador2, que limita el número de órdenes a comprar ################################################## START-NEW
+#disparador2 = len([x for x in ordenes_compra if ordenes_compra[x]['estado_venta']=='']) ## ojo!
+try:
+    disparador2 = len([x for x in ordenes_compra if ordenes_compra[x]['estado_venta']==''])
+except:
+    disparador2 = 0
+####################################################################################################################### END-NEW
 seriales = {}
 relacion_id_compra_venta = {}
 forze_venta=False
@@ -474,6 +480,8 @@ while True:
             if ((item not in ids_lanzadas) and (ordenes_compra[item]['estado_compra']=='open')) :
                 print('## BUY order %s EXECUTED in %s eur ##' %(item, ordenes_compra[item]['precio_compra']))
                 ordenes_compra[item]['estado_compra']='filled'
+
+        disparador2 = len([x for x in ordenes_compra if ordenes_compra[x]['estado_venta']=='']) ## ojo!!
 
         ### INITIAL DATA READING ###
         ######################################################################
@@ -625,6 +633,9 @@ while True:
 #            (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and
 #            (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))) or ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and
 #            (trigg_oportunidad == True) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask))):  #### ---- cambiada
+            if (cond2):
+                n_orders_total = 2 * n_orders
+                print('## Se ha desplomado el valor, se van a lanzar %s ordenes de compra ##' %(n_orders_total))
             disparador1 = 0 # Para espaciar las compras
             for i in range(n_orders):
                 if (disparador2 < n_orders_total):
