@@ -77,7 +77,9 @@ class CoinbaseExchangeAuth(AuthBase):
         message = timestamp + request.method + request.path_url + (request.body or '')
         hmac_key = base64.b64decode(self.secret_key)
         signature = hmac.new(hmac_key, message, hashlib.sha256)
+#        signature = hmac.new(hmac_key, message.encode(), hashlib.sha256)
         signature_b64 = signature.digest().encode('base64').rstrip('\n')
+#        signature_b64 = base64.b64encode(signature.digest()).decode()
 
         request.headers.update({
             'CB-ACCESS-SIGN': signature_b64,
