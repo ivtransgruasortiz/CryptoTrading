@@ -158,7 +158,10 @@ def rsi(n,df1):
 def compare_dates(df,fecha_inicio,fecha_final):
     valor = []
     for item in df:
-        valor.append(time.strptime(item,'%Y-%m-%dT%H:%M:%S.%fZ')>=fecha_inicio)and(time.strptime(item,'%Y-%m-%dT%H:%M:%S.%fZ')<=fecha_final)
+        try:
+            valor.append(time.strptime(item,'%Y-%m-%dT%H:%M:%S.%fZ')>=fecha_inicio)and(time.strptime(item,'%Y-%m-%dT%H:%M:%S.%fZ')<=fecha_final)
+        except:
+            valor.append(time.strptime(item,'%Y-%m-%dT%H:%M:%SZ')>=fecha_inicio)and(time.strptime(item,'%Y-%m-%dT%H:%M:%SZ')<=fecha_final)   
     return valor
 
 def valor_op(side,size,price,fee):
@@ -337,8 +340,8 @@ seg = 0
 rango = 'NotDefined'
 t_time=[]
 trigger1 = 0
-n_rapida_bidask = 120 #4 Cantidad recomendada
-n_lenta_bidask = 360 #12 Cantidad recomendada
+n_rapida_bidask = 90 #4 Cantidad recomendada
+n_lenta_bidask = 180 #12 Cantidad recomendada
 limit_dif_bidask = 0.31 #Diferencia o ǴAP Bid-Ask para lanzar orden compra RECOMENDADA 0.31 - Distinto a LIM_DIF_BIDASK que es para los aleatorios
 alpha_rapida_bidask = 2.0/(n_rapida_bidask+1)
 alpha_lenta_bidask = 2.0/(n_lenta_bidask+1)
@@ -387,7 +390,8 @@ plt.ion()
 
 ## Fecha y hora inicial del codigo
 fecha_ini = datetime.datetime.utcnow()
-fecha_ini = unicode(datetime.datetime.strftime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ'))
+#fecha_ini = unicode(datetime.datetime.strftime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ'))
+fecha_ini = datetime.datetime.strftime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ')
 fecha_ini = time.strptime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ')
 ## Fecha apertura operaciones hoy
 fecha_ininombre = time.strftime("%c")
@@ -787,7 +791,8 @@ while True:
             ## LOG ARCHIVE CREATION FROM GDAX API - NEW!!
             ## Fecha y hora final del codigo
             fecha_fin = datetime.datetime.utcnow()
-            fecha_fin = unicode(datetime.datetime.strftime(fecha_fin, '%Y-%m-%dT%H:%M:%S.%fZ'))
+            #fecha_fin = unicode(datetime.datetime.strftime(fecha_fin, '%Y-%m-%dT%H:%M:%S.%fZ'))
+            fecha_fin = datetime.datetime.strftime(fecha_fin, '%Y-%m-%dT%H:%M:%S.%fZ')
             fecha_fin = time.strptime(fecha_fin, '%Y-%m-%dT%H:%M:%S.%fZ')
             n_pag = 1
             lista_final = []
@@ -940,7 +945,8 @@ print ('Las ganancias totales aprox. sin contar tasas han sido %s euros' %(sum(g
 
 ## Fecha y hora final del codigo
 fecha_fin = datetime.datetime.utcnow()
-fecha_fin = unicode(datetime.datetime.strftime(fecha_fin, '%Y-%m-%dT%H:%M:%S.%fZ'))
+#fecha_fin = unicode(datetime.datetime.strftime(fecha_fin, '%Y-%m-%dT%H:%M:%S.%fZ'))
+fecha_fin = datetime.datetime.strftime(fecha_fin, '%Y-%m-%dT%H:%M:%S.%fZ')
 fecha_fin = time.strptime(fecha_fin, '%Y-%m-%dT%H:%M:%S.%fZ')
 
 ## LOG ARCHIVE CREATION FROM GDAX API
