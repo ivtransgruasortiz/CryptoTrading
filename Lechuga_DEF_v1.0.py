@@ -755,7 +755,7 @@ while True:
         if (len(t_time) > (n_lenta + 100)):
             t_time.pop(0)
 
-        if seg%120 == 0:
+        if seg%30 == 0:
             dif_min = round((time.time() - t_inicial)/60,2)
             print ('\nCiclo %s' %(seg))
             print ('%s Minutos' %(dif_min))
