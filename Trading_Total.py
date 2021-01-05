@@ -81,9 +81,9 @@ class CoinbaseExchangeAuth(AuthBase):
         })
         return request
 api_url = 'https://api.pro.coinbase.com/' ## la real
-kiko = '822d08765f03d4bf0bb848dbbe97829c' #sys.argv[1] #text
-sandra = 'gPzfXKrXdYe1tiZBRaFjJFZxL0lqwUTwn+zYCdSStz9pW1keMPVNvGNpZ+cIZ26HB04gTZzDDEzF7Gb8USHP/w==' #sys.argv[2] #text
-pablo = 'ManIslaPerejil374' #sys.argv[3] #text
+kiko = '' #sys.argv[1] #text
+sandra = '' #sys.argv[2] #text
+pablo = '' #sys.argv[3] #text
 auth = CoinbaseExchangeAuth(kiko, sandra, pablo)
 
 ### GET ACCOUNTS ###
