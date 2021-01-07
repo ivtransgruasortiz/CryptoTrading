@@ -24,6 +24,7 @@ import datetime as dt
 from scipy import stats
 import tqdm
 
+
 sys.stdout.flush() #Para cambiar el comportamiento de los print -- sin esta línea los escribe del tirón...
 
 ### SYSTEM DATA ###
@@ -43,6 +44,12 @@ else:
     system = sys.platform
 
 from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial
+import yaml
+
+## Importar datos configuraciones
+#
+with open('config.yaml', 'r') as config_file:
+    doc = yaml.safe_load(config_file)
 
 print('\n' + sys.platform + ' System\n')
 print ('#####################################')
@@ -81,16 +88,16 @@ class CoinbaseExchangeAuth(AuthBase):
         })
         return request
 api_url = 'https://api.pro.coinbase.com/' ## la real
-kiko = '' #sys.argv[1] #text
-sandra = '' #sys.argv[2] #text
-pablo = '' #sys.argv[3] #text
+kiko = doc['Credentials'][0] #sys.argv[1] #text
+sandra = doc['Credentials'][1]  #sys.argv[2] #text
+pablo = doc['Credentials'][2] #sys.argv[3] #text
 auth = CoinbaseExchangeAuth(kiko, sandra, pablo)
 
 ### GET ACCOUNTS ###
 #
 account = rq.get(api_url + 'accounts', auth=auth)
-print(account.json())
 account1 = account.json()
+# print(account.json())
 
 ### Disp_iniciales ###
 #
