@@ -24,7 +24,6 @@ import datetime as dt
 from scipy import stats
 import tqdm
 
-
 sys.stdout.flush() #Para cambiar el comportamiento de los print -- sin esta línea los escribe del tirón...
 
 ### SYSTEM DATA ###
@@ -37,57 +36,35 @@ else:
     wd = wd + '/'
     sys.path.append(wd)
 if sys.platform == 'win32':
-    print ('\n#### Windows System ####')
     system = sys.platform
 else:
-    print ('\n#### Linux System ####')
     system = sys.platform
 
-from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial
+from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial, tiempo_pausa, historic_df, \
+    CoinbaseExchangeAuth
 import yaml
 
-## Importar datos configuraciones
+## Importar datos-configuraciones-funciones
 #
 with open('config.yaml', 'r') as config_file:
     doc = yaml.safe_load(config_file)
 
-print('\n' + sys.platform + ' System\n')
-print ('#####################################')
-print ('#####################################')
-print ('\n### Importing Libraries... ###')
+print('#####################################')
+print(sys.platform + ' System')
+print('#####################################')
+print('\n### Importing Libraries... ###')
 
-hora_ejecucion = 12 # time to stop and restart en utc --- +1 invierno +2 verano
-minuto_ejecucion = 55
-hora_inicio = datetime.datetime.utcnow()
-crypto = 'LTC-EUR'
+# ## Parte para cumplir 3 ejecuciones por segundo como ejemplo
+# #
+# for i in range(10):
+#     inicio = datetime.now()
+#     time.sleep(.32635373)
+#     a = tiempo_pausa(inicio, 1/3)
+#     time.sleep(a)
 
-### AUTHENTICATION INTO COINBASE ###
+# ### AUTHENTICATION INTO COINBASE ###
 #
 print('\n### Authenticating... ###')
-class CoinbaseExchangeAuth(AuthBase):
-    def __init__(self, api_key, secret_key, passphrase):
-        self.api_key = api_key
-        self.secret_key = secret_key
-        self.passphrase = passphrase
-
-    def __call__(self, request):
-        timestamp = str(time.time())
-        message = timestamp + request.method + request.path_url + (request.body or '')
-        hmac_key = base64.b64decode(self.secret_key)
-        # signature = hmac.new(hmac_key, message, hashlib.sha256)
-        signature = hmac.new(hmac_key, message.encode(), hashlib.sha256)
-        # signature_b64 = signature.digest().encode('base64').rstrip('\n')
-        signature_b64 = base64.b64encode(signature.digest()).decode()
-
-        request.headers.update({
-            'CB-ACCESS-SIGN': signature_b64,
-            'CB-ACCESS-TIMESTAMP': timestamp,
-            'CB-ACCESS-KEY': self.api_key,
-            'CB-ACCESS-PASSPHRASE': self.passphrase,
-            'Content-Type': 'application/json'
-        })
-        return request
-api_url = 'https://api.pro.coinbase.com/' ## la real
 kiko = doc['Credentials'][0] #sys.argv[1] #text
 sandra = doc['Credentials'][1]  #sys.argv[2] #text
 pablo = doc['Credentials'][2] #sys.argv[3] #text
@@ -95,9 +72,10 @@ auth = CoinbaseExchangeAuth(kiko, sandra, pablo)
 
 ### GET ACCOUNTS ###
 #
+crypto = "LTC-EUR"
+api_url = 'https://api.pro.coinbase.com/' ## la real
 account = rq.get(api_url + 'accounts', auth=auth)
 account1 = account.json()
-# print(account.json())
 
 ### Disp_iniciales ###
 #
@@ -107,106 +85,49 @@ for item in account1:
 
 ### INICIO tramo para datos anteriores ###
 #
-cifra_origen = 1000000
-final1 = 0
-comp = False
-cont = 0
-vect_hist = {}
-b = []
+cifra_origen = 100
 pag_historic = 10
-print('### Gathering Data... ')
-
-for i in tqdm.tqdm([10000000, 1000000, 100000, 10000, 1000, 100]):
-    while not comp:
-        r = rq.get(api_url + 'products/' + crypto + '/trades?after=%s' % (cifra_origen+cont*i), auth=auth) #va de 100 en 100
-        try:
-            origen1 = [x['trade_id'] for x in r.json()]
-        except:
-            continue
-        final = origen1[0]
-        comp = (final == final1)
-        coincide = cont - 1
-        final1 = final
-        cont += 1
-    cifra_origen = cifra_origen + (coincide - 1) * i
-    cont = 0
-    comp = False
-
-if system == 'linux':
-    for i in tqdm.trange (pag_historic): # 200  SON UNOS 12 DIAS APROX
-        r = rq.get(api_url + 'products/' + crypto + '/trades?after=%s' %(cifra_origen+coincide*100-i*100), auth=auth)
-        try:
-            a = [float(x['price']) for x in r.json()]
-        except:
-            continue
-        for x in r.json():
-            try:
-                b.append(dt.datetime.strptime(x['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
-            except:
-                b.append(dt.datetime.strptime(x['time'], '%Y-%m-%dT%H:%M:%SZ'))
-        a.reverse()
-        b.reverse()
-        c = dict(zip(b, a))
-        vect_hist.update(c)
-
-if system == 'win32':
-    for i in range(pag_historic):
-        r = rq.get(api_url + 'products/' + crypto + '/trades?after=%s' %(cifra_origen+coincide*100-i*100), auth=auth)
-        try:
-            a = [float(x['price']) for x in r.json()]
-        except:
-            continue
-        for x in r.json():
-            try:
-                b.append(dt.datetime.strptime(x['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
-            except:
-                b.append(dt.datetime.strptime(x['time'], '%Y-%m-%dT%H:%M:%SZ'))
-        a.reverse()
-        b.reverse()
-        c = dict(zip(b, a))
-        vect_hist.update(c)
-
-hist_df = pd.DataFrame.from_dict(vect_hist, orient='index')
-hist_df.columns = ['ltc_eur']
-hist_df = hist_df.sort_index(axis=0)
+hist_df = historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic)
 
 ## LIMITS UPPER AND LOWER TO LIMIT OPERATIONS BY STATISTICS
-lim_sup = hist_df['ltc_eur'].max()
-lim_inf = hist_df['ltc_eur'].min()
+#
+
+
 ## PERCENTILES
-percent_sup = 30 # 70
+#
+percent_sup = 70
 percent_inf = 100 - percent_sup
-lim_sup_1 = stats.scoreatpercentile(hist_df['ltc_eur'], percent_sup)
-lim_inf_1 = stats.scoreatpercentile(hist_df['ltc_eur'], percent_inf)
-p70 = stats.scoreatpercentile(hist_df['ltc_eur'], 70)
-p50 = stats.scoreatpercentile(hist_df['ltc_eur'], 50)
-p30 = stats.scoreatpercentile(hist_df['ltc_eur'], 30)
-p10 = stats.scoreatpercentile(hist_df['ltc_eur'], 10)
+lim_sup_1 = stats.scoreatpercentile(hist_df[crypto], percent_sup)
+lim_inf_1 = stats.scoreatpercentile(hist_df[crypto], percent_inf)
+p70 = stats.scoreatpercentile(hist_df[crypto], 70)
+p50 = stats.scoreatpercentile(hist_df[crypto], 50)
+p30 = stats.scoreatpercentile(hist_df[crypto], 30)
+p10 = stats.scoreatpercentile(hist_df[crypto], 10)
 fig1 = plt.figure(1)
-plt.hist(hist_df['ltc_eur'], bins=55)
+plt.hist(hist_df[crypto], bins=55)
 plt.show()
-print('\nLimite PRINCIPAL para limitar operaciones en  P%s = %s eur.' %(percent_sup, lim_sup_1) )
-print('\nLimite SECUNDARIO para limitar operaciones en P%s = %s eur.' %(percent_inf, lim_inf_1) )
+print('\nLimite PRINCIPAL para limitar operaciones en  P%s = %s eur.' % (percent_sup, lim_sup_1))
+print('\nLimite SECUNDARIO para limitar operaciones en P%s = %s eur.' % (percent_inf, lim_inf_1))
 
 ### CALCULO MEDIAS MOVILES EXPONENCIALES - EMA'S
 mediavar_rapida = []
 mediavar_lenta = []
 expmediavar_rapida = []
 expmediavar_lenta = []
-n_rapida = 100
-n_lenta = 200
-for i in range(len(hist_df['ltc_eur'])):
-    mediavar_rapida.append(sma(n_rapida,hist_df['ltc_eur'].values[:i+1]))
-    mediavar_lenta.append(sma(n_lenta,hist_df['ltc_eur'].values[:i+1]))
+n_rapida = 10
+n_lenta = 20
+for i in range(len(hist_df[crypto])):
+    mediavar_rapida.append(sma(n_rapida, hist_df[crypto].values[:i+1]))
+    mediavar_lenta.append(sma(n_lenta, hist_df[crypto].values[:i+1]))
     if len(expmediavar_rapida) <= n_rapida+1:
         expmediavar_rapida.append(mediavar_rapida[-1])
     else:
-        expmediavar_rapida.append(ema(n_rapida,hist_df['ltc_eur'].values[:i+1], 2.0/(n_rapida+1), expmediavar_rapida))
+        expmediavar_rapida.append(ema(n_rapida, hist_df[crypto].values[:i+1], 2.0/(n_rapida+1), expmediavar_rapida))
 
     if len(expmediavar_lenta) <= n_lenta+1:
         expmediavar_lenta.append(mediavar_lenta[-1])
     else:
-        expmediavar_lenta.append(ema(n_lenta,hist_df['ltc_eur'].values[:i+1], 2.0/(n_lenta+1), expmediavar_lenta))
+        expmediavar_lenta.append(ema(n_lenta, hist_df[crypto].values[:i+1], 2.0/(n_lenta+1), expmediavar_lenta))
 
 ### ADD COLUMNS TO DATAFRAME
 hist_df['expmedia_rapida'] = expmediavar_rapida
@@ -215,11 +136,11 @@ hist_df['expmedia_lenta'] = expmediavar_lenta
 ## PLOT TRADES AND EMA'S
 fig2 = plt.figure(2)
 ax2 = fig2.add_subplot(111)
-ax2.plot(hist_df['ltc_eur'],label='ltc_eur')
-ax2.plot(hist_df['expmedia_rapida'],label='expmedia_rapida')
-ax2.plot(hist_df['expmedia_lenta'],label='expmedia_lenta')
+ax2.plot(hist_df[crypto], label=crypto)
+ax2.plot(hist_df['expmedia_rapida'], label='expmedia_rapida')
+ax2.plot(hist_df['expmedia_lenta'], label='expmedia_lenta')
 ax2.legend()
-plt.xticks(rotation = '45')
+plt.xticks(rotation='45')
 plt.show()
 ######################################################################
 ##### FIN tramo datos anteriores ####################################
@@ -235,49 +156,53 @@ plt.show()
 ####################################################
 ### START REAL-TIME TRADING #######################
 ##################################################
-print ('\n### Data OK! ###')
-print ('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) to cancel and view results')
+print('\n### Data OK! ###')
+print('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) to cancel and view results')
 
 ## INITIAL RESET FOR VARIABLES
-n_orders = 3 # Para los aleatorios
-n_ciclos_to_cancel = 50 #80
-ndisparador = 1 #5 ##60 Tiempo en segundos o ciclos entre ordenes de compra #5
-disparador1 = ndisparador ## Espaciado entre ordenes compras
-n_eur_hold = 120 # 800 # Estaba a 80... es el limite para limitar el numero de compras segun las ordenes de compra emitidas
-size_order_bidask = 0.2 # 0.5
-porcentaje_beneficio = 1.6 # 0.5 ## En %, es decir 0.6 significa 0.6% que es ademas cantidad recomendada 0.6%
+
+size_order_bidask = 0.1
+limit_dif_bidask = 1
+n_ciclos_to_cancel = 50
+porcentaje_caida = 8
+porcentaje_beneficio = 3
 disp = 0 # Para ajustar historico
 disp1 = 0 # Para ajustar historico
-lim_dif_bidask = 0.03 # Dif_Bidask limite para hacer aleatorios o no.
-stop_loss = 0.04
+
 serial_number = 1 # Para relacionar las ordenes de compra-venta
 
-precio=[]
+precio = []
 precio_bidask = []
-fecha=[]
-ltc_price=[]
-expmediavar_rapida_bidask = [expmediavar_rapida[-1]]
-expmediavar_lenta_bidask = [expmediavar_lenta[-1]]
+fecha = []
+crypto_price = []
+
 seg = 0
-rango = 'NotDefined'
-t_time=[]
-trigger1 = 0
-n_rapida_bidask = 90 #4 Cantidad recomendada
-n_lenta_bidask = 180 #12 Cantidad recomendada
-limit_dif_bidask = 0.31 #Diferencia o ǴAP Bid-Ask para lanzar orden compra RECOMENDADA 0.31 - Distinto a LIM_DIF_BIDASK que es para los aleatorios
+
+t_time = []
+
+n_rapida_bidask = 4
+n_lenta_bidask = 12
+n_rapida = 100
+n_lenta = 200
 alpha_rapida_bidask = 2.0/(n_rapida_bidask+1)
 alpha_lenta_bidask = 2.0/(n_lenta_bidask+1)
 precio_compra_bidask_ejecutado = []
 precio_venta_bidask_ejecutado = []
-ganancias = []
+
 list_trades_id = []
 n_precios_hist = len(hist_df) # Longitud de lista de valores para calcular el hist y actualizar el valor máximo
-hist_margin = np.around(list(hist_df['ltc_eur'][-n_precios_hist-1:-1].values),2) # vector de precios pasados al que agregar los nuevos precios y que nos sirva para establecer nuevos límites a la compra...
+hist_margin = np.around(list(hist_df[crypto][-n_precios_hist-1:-1].values), 2) # vector de precios pasados al que agregar los nuevos precios y que nos sirva para establecer nuevos límites a la compra...
 n_ciclos_to_hist = 120 # 120 estaba inicialmente... número de ciclos para meter ultima orden en hist para calcular limite de operacion
 ids_comp_vent = {}
 contadores = {}
+
+seriales = {}
+relacion_id_compra_venta = {}
+forze_venta = False
+plt.ion()
+
 try:
-    f = open('filess_compra.txt','r')
+    f = open('filess_compra.txt', 'r')
     ordenes_compra = json.load(f)
     if (ordenes_compra != {}):
         print('\nHanging Purchases --> Yes \nDetails: ')
@@ -292,35 +217,27 @@ try:
 except:
     ordenes_compra = {}
 try:
-    f = open('filess_venta.txt','r')
+    f = open('filess_venta.txt', 'r')
     ordenes_venta = json.load(f)
     f.close()
 except:
     ordenes_venta = {}
 
-## Iniciación disparador2, que limita el número de órdenes a comprar ################################################## START-NEW
-#disparador2 = len([x for x in ordenes_compra if ordenes_compra[x]['estado_venta']=='']) ## ojo!
-try:
-    disparador2 = len([x for x in ordenes_compra if ordenes_compra[x]['estado_venta']==''])
-except:
-    disparador2 = 0
 ####################################################################################################################### END-NEW
-seriales = {}
-relacion_id_compra_venta = {}
-forze_venta=False
-plt.ion()
 
-## Fecha y hora inicial del codigo
-fecha_ini = datetime.datetime.utcnow()
-#fecha_ini = unicode(datetime.datetime.strftime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ'))
-fecha_ini = datetime.datetime.strftime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ')
-fecha_ini = time.strptime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ')
-## Fecha apertura operaciones hoy
-fecha_ininombre = time.strftime("%c")
-if system == 'linux2':
-    name_fich = 'log_' + fecha_ininombre + '.txt'
-else:
-    name_fich = 'log.txt'
+### para los ficheros de registro ###
+#
+# ## Fecha y hora inicial del codigo
+# fecha_ini = datetime.datetime.utcnow()
+# #fecha_ini = unicode(datetime.datetime.strftime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ'))
+# fecha_ini = datetime.datetime.strftime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ')
+# fecha_ini = time.strptime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ')
+# ## Fecha apertura operaciones hoy
+# fecha_ininombre = time.strftime("%c")
+# if system == 'linux2':
+#     name_fich = 'log_' + fecha_ininombre + '.txt'
+# else:
+#     name_fich = 'log.txt'
 
 
 ################################################
@@ -349,249 +266,155 @@ else:
 ###########
 
 t_inicial = time.time()
+freq = 3
+period = 1/freq
 
 while True:
     try:
         start_time = time.time()
+
+        ## Ultimas ordenes lanzadas tanto de compra como de venta
+        #
         try:
-            r = rq.get(api_url + 'products/' + crypto + '/trades?before=1&limit=2', auth = auth)
-            r1 = rq.get(api_url + 'orders', auth = auth)
+            # r = rq.get(api_url + 'products/' + crypto + '/trades?before=1&limit=2', auth=auth)
+            r1 = rq.get(api_url + 'orders', auth=auth)
             try:
                 ordenes_lanzadas = r1.json()
             except:
-                continue
+                pass
         except:
             time.sleep(0.1)
-            continue #pass
+            pass
         try:
             ids_lanzadas = [x['id'] for x in ordenes_lanzadas] ## pone compra pero incluye compra y venta
         except:
             time.sleep(0.1)
-            continue #pass
+            pass
+
+        ### Borrado ordenes de Compra/Venta/Canceladas ###
+        #
         for item in ordenes_venta.keys():
             if item not in ids_lanzadas:
                 print('## ATTENTION!!##  SELL order %s EXECUTED in %s eur (for buy-order %s EXECUTED in %s eur)  ##' %(item, ordenes_venta[item]['precio_venta'], ordenes_venta[item]['id_compra'], ordenes_compra[ordenes_venta[item]['id_compra']]['precio_compra']))
-                ganancias.append(size_order_bidask*ordenes_venta[item]['precio_venta'] - size_order_bidask*ordenes_compra[ordenes_venta[item]['id_compra']]['precio_compra'])
-                ordenes_compra[ordenes_venta[item]['id_compra']]['estado_venta']='filled'
+                ordenes_compra[ordenes_venta[item]['id_compra']]['estado_venta'] = 'filled'
                 ordenes_venta[item]['estado_venta'] = 'filled'
                 print ('\nGanancia operacion: %s eur.' %(ganancias[-1]))
                 print ('\nGanancia acumulada: %s eur. \n' %(sum(ganancias)))
-
-#                ######## WITHDRAWALS INTO COINBASE ACCOUNT ################
-#                r1b = rq.get(api_url + 'fills?product_id=' + crypto, auth = auth)
-#                ordenes_fill = r1b.json()
-#                beneficio = round((np.sum([float(x['size'])*float(x['price']) for x in ordenes_fill if x['order_id']==item])-np.sum([float(x['size'])*float(x['price']) for x in ordenes_fill if x['order_id']==ordenes_venta[item]['id_compra']])) - (np.sum([float(x['fee']) for x in ordenes_fill if x['order_id']==item])+np.sum([float(x['fee']) for x in ordenes_fill if x['order_id']==ordenes_venta[item]['id_compra']])),2)
-##                r1c = rq.get(api_url + 'coinbase-accounts', auth = auth) ## 'coinbase-accounts' ## 'payment-methods'
-##                payment_methods = r1c.json() #### This 2 lines are to know pay methods availables
-#                order_withdrawals = {
-#                'amount': beneficio,
-#                'currency': 'EUR',
-#                'coinbase_account_id': '274f1010-b7d9-5fba-b43b-4b3f7f756f3c'
-#                }
-#                if (beneficio > 0):
-#                    r1d = rq.post(api_url + 'withdrawals/coinbase-account', json=order_withdrawals, auth=auth)
-#                    withdrawals = r1d.json()
-#                    print('%s eur benefits transferred by withdrawals into coinbase EUR-wallet' %(beneficio))
-#                ######## Withdrawals finished #######
-
                 del (ordenes_compra[ordenes_venta[item]['id_compra']])
                 del (ordenes_venta[item])
+
         for item in ordenes_lanzadas:
             if ((item['side']=='buy')&(float(item['filled_size'])==0)&(item['id'] in ordenes_compra.keys())):
                 ordenes_compra[item['id']]['contador']+=1
                 if ordenes_compra[item['id']]['contador'] > n_ciclos_to_cancel:
-                    r2 = rq.delete(api_url + 'orders/'+ item['id'], auth = auth)
+                    r2 = rq.delete(api_url + 'orders/' + item['id'], auth = auth)
                     disparador2 -= 1
-                    print('## --CANCELED-- BUY order %s in %s eur ##' %(item['id'],ordenes_compra[item['id']]['precio_compra']))
+                    print('## --CANCELED-- BUY order %s in %s eur ##' %(item['id'], ordenes_compra[item['id']]['precio_compra']))
                     del (ordenes_compra[item['id']])
+
         for item in ordenes_compra.keys():
             if ((item not in ids_lanzadas) and (ordenes_compra[item]['estado_compra']=='open')) :
                 print('## BUY order %s EXECUTED in %s eur ##' %(item, ordenes_compra[item]['precio_compra']))
-                ordenes_compra[item]['estado_compra']='filled'
+                ordenes_compra[item]['estado_compra'] = 'filled'
 
-        disparador2 = len([x for x in ordenes_compra if ordenes_compra[x]['estado_venta']=='']) ## ojo!!
+        disparador2 = len([x for x in ordenes_compra if ordenes_compra[x]['estado_venta'] == '']) ## ojo!!
 
-        ### INITIAL DATA READING ###
-        ######################################################################
-        ### Get accounts ####################################################
-        ####################################################################
+        ### Get accounts ###
+        #
         try:
             account = rq.get(api_url + 'accounts', auth=auth)
             try:
                 account1 = account.json()
             except:
-                continue
+                pass
         except:
             time.sleep(0.1)
-            continue #pass
-        ######################################################################
-        ## Initial disponibilities in my account #######################
-        ####################################################################
-        try:
-            eur_hold = float([x['hold'] for x in account1 if x['currency']=='EUR'][0])
-            eur_avai = float([x['available'] for x in account1 if x['currency']=='EUR'][0])
-            ltc_hold = float([x['hold'] for x in account1 if x['currency']=='LTC'][0])
-            ltc_avai = float([x['available'] for x in account1 if x['currency']=='LTC'][0])
-        except:
-            time.sleep(0.1)
-            continue #pass
-        ######################################################################
-        ## bid-ask READINGS ##########################################################
-        ####################################################################
+            pass
+
+        ### Initial disponibilities in my account ###
+        #
+        activos_disponibles = {x['currency']: {'hold': x['hold'], 'available': x['available']} for x in account1}
+        eur_avai = float(activos_disponibles['EUR']['available'])
+        ### bid-ask READINGS ###
+        #
         try:
             bidask = rq.get(api_url + 'products/' + crypto + '/book?level=1') # nivel 2 para 50 mejores bidask
             try:
                 bidask1 = bidask.json()
             except:
-                time.sleep(0.2)
-                continue
+                time.sleep(0.1)
+                pass
             try:
                 media_bidask = np.mean([float(bidask1['asks'][0][0]), float(bidask1['bids'][0][0])])
+                dif_bidask = round(float(bidask1['asks'][0][0]) - float(bidask1['bids'][0][0]), 2)
             except:
-                continue
-            dif_bidask = float(bidask1['asks'][0][0])-float(bidask1['bids'][0][0])
+                pass
         except:
             time.sleep(0.1)
-            continue #pass
+            pass
 
-        ### OPERATIVA ###
-        ###############################################
         ### OPERATIVA REAL CON BID-ASK ###
-        ###############################################
+        #
         precio_bidask.append(media_bidask)
-        if len(precio_bidask) <= 5000:
-            trigg_oportunidad = False
-        elif ((precio_bidask[5000]-precio_bidask[-1]) > (0.02*precio_bidask[5000])):
-            trigg_oportunidad = True
-        else:
-            trigg_oportunidad = False
 
-        ### prueba #############################################################################
-        if len(precio_bidask) <= 10000:
-            trigg_oportunidad2 = False
-        elif ((precio_bidask[10000]-precio_bidask[-1]) > (0.01*precio_bidask[10000])):
-            trigg_oportunidad2 = True
-        else:
-            trigg_oportunidad2 = False
-        #####################################################################################
-
+        ### Limitacion tamaño lista ###
+        #
         if (len(precio_bidask) > (n_lenta_bidask + 50000)):
             precio_bidask.pop(0)
-        expmediavar_rapida_bidask.append(ema(n_rapida_bidask,precio_bidask, 2.0/(n_rapida_bidask+1), expmediavar_rapida_bidask))
-        expmediavar_lenta_bidask.append(ema(n_lenta_bidask,precio_bidask, 2.0/(n_lenta_bidask+1), expmediavar_lenta_bidask))
 
-#        if disp1 == 0: # para eliminar el valor de referencia del principio y que cuadren las longitudes de los vectores
-#            expmediavar_rapida_bidask = [expmediavar_rapida_bidask[1]]
-#            expmediavar_lenta_bidask = [expmediavar_lenta_bidask[1]]
-#            disp1 = 1
-
-        if (len(expmediavar_rapida_bidask) > (n_lenta_bidask + 50000)):
-            expmediavar_rapida_bidask.pop(0)
-        if (len(expmediavar_lenta_bidask) > (n_lenta_bidask + 50000)):
-            expmediavar_lenta_bidask.pop(0)
-
-        ## ALGORITMO VENTA CRYPTO
-#        if ((dif_bidask >= 0.0001) and (dif_bidask < 0.02)):
-#            precio_compra_bidask = "%.2f" %(float(bidask1['bids'][0][0])-0.01)
-#            precio_venta_bidask = "%.2f" %(float(bidask1['bids'][0][0]))
-#        elif ((dif_bidask >= 0.02) and (dif_bidask <= lim_dif_bidask)):
-#            precio_compra_bidask = "%.2f" %(float(bidask1['bids'][0][0]))
-#            precio_venta_bidask = "%.2f" %(float(bidask1['bids'][0][0]))
-#        else:
-
-        precio_compra_bidask = "%.2f" %(float(bidask1['bids'][0][0]))
-        precio_venta_bidask = "%.2f" %(float(bidask1['bids'][0][0]))
+        precio_compra_bidask = "%.2f" % (float(bidask1['bids'][0][0]))
+        precio_venta_bidask = "%.2f" % (float(bidask1['asks'][0][0]))
 
         ##############
         ## COMPRA ###
         ############
 
-        ### NUMERO DE PAQUETES DE COMPRA - DESCOMENTAR EN DEFINITIVOOOOOOOOOO
-        if ((media_bidask > p50) and (media_bidask < p70)):
-            n_paquetes_compra = 1 #4
-            stop_loss = 0.06
-            rango = 'p50-p70'
-        elif ((media_bidask > p30) and (media_bidask <= p50)):
-            n_paquetes_compra = 3 #6
-            stop_loss = 0.06
-            rango = 'p30-p50'
-        elif ((media_bidask > p10) and (media_bidask <= p30)):
-            n_paquetes_compra = 3 #10
-            stop_loss = 0.06
-            rango = 'p10-p30'
-        elif (media_bidask <= p10):
-            n_paquetes_compra = 5 #5 * n_orders # Numero maximo de ordenes de compra en activo
-            stop_loss = 0.08
-            rango = '<p10'
-        else:
-            n_paquetes_compra = 0
-            rango = '>p70'
-
-##############################################
-#        Esto de debajo borrarlo en def
-#        if (media_bidask > p70):
-#            n_paquetes_compra = 0
-#        else:
-#            n_paquetes_compra = 2
-
-        n_orders_total = n_paquetes_compra * n_orders
-##############################################
-
         ############################################
 
-        disparador1 += 1 # para espaciar las compras que no las haga seguidas #####
-        eur_disponibles_orden = round(float(precio_compra_bidask),2)*size_order_bidask
-        ### COMENTAR Y/O DESCOMENTAR LINEAS para bloqueo limite superior
+        # disparador1 += 1 # para espaciar las compras que no las haga seguidas #####
+        eur_disponibles_orden = round(float(precio_compra_bidask), 2) * size_order_bidask
 
-        regla_inicio_disponibilidad_eur = (seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden)
-        regla_eur_comprometidos = (eur_hold < n_eur_hold)
-        regla_limites_orders = (disparador1 >= ndisparador) and (disparador2 < n_orders_total)
-        regla_dif_bidask = (dif_bidask < limit_dif_bidask)
-        regla_medias_exp_compra = ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and
-            (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))
-        regla_oportunidad = (trigg_oportunidad == True)
+        regla_inicio_disponibilidad_eur = eur_avai > eur_disponibles_orden
+        regla_orden_compra_lanzada = disparador2 == 0
+        regla_dif_bidask = (dif_bidask < limit_dif_bidask * media_bidask)
+        n_ciclos5 = freq * 1200
+        n_ciclos10 = freq * 2400
+        n_ciclos15 = freq * 5400
+        n_ciclos20 = freq * 10800
+        regla_tiempo_minimo_ejecucion = len(precio_bidask) > n_ciclos5 #max(n_ciclo)
+        if regla_tiempo_minimo_ejecucion:
+            regla_oportunidad_5 = (precio_venta_bidask <= precio_bidask[-n_ciclos5])
+        else:
+            regla_oportunidad_5 = False
+        # regla_oportunidad_10 = (precio_venta_bidask <= precio_bidask[-n_ciclos10])
+        # regla_oportunidad_15 = (precio_venta_bidask <= precio_bidask[-n_ciclos15])
+        # regla_oportunidad_20 = (precio_venta_bidask <= precio_bidask[-n_ciclos20])
 
-        cond1 = (regla_inicio_disponibilidad_eur and regla_eur_comprometidos and
-            regla_limites_orders and regla_dif_bidask and regla_medias_exp_compra)
-        cond2 = (regla_inicio_disponibilidad_eur and regla_eur_comprometidos and
-            regla_limites_orders and regla_dif_bidask and regla_oportunidad)
+        cond1 = (regla_inicio_disponibilidad_eur and regla_orden_compra_lanzada and
+            regla_dif_bidask and regla_tiempo_minimo_ejecucion and regla_oportunidad_5)
 
-        if ((cond1) or (cond2)):
-#        if (((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and
-#            (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask) and ((expmediavar_rapida_bidask[-2] < expmediavar_lenta_bidask[-2]) and
-#            (expmediavar_rapida_bidask[-1] > expmediavar_lenta_bidask[-1]))) or ((seg > n_lenta_bidask) and (eur_avai > n_orders*eur_disponibles_orden) and
-#            (trigg_oportunidad == True) and (eur_hold < n_eur_hold) and (disparador1 >= ndisparador) and (disparador2 < n_orders_total) and (dif_bidask < limit_dif_bidask))):  #### ---- cambiada
-            if (cond2):
-                n_orders_total = 2 * n_orders
-                print('## Se ha desplomado el valor, se van a lanzar %s ordenes de compra ##' %(n_orders_total))
-            disparador1 = 0 # Para espaciar las compras
-            for i in range(n_orders):
-                if (disparador2 < n_orders_total):
-                    if dif_bidask > lim_dif_bidask:
-                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-2, int(lim_dif_bidask*100)-1)]),2)
-                    else:
-                        precio_random = round(float(precio_compra_bidask) + np.random.choice([x*0.01 for x in range(-3, 1)]),2)
+        if cond1:
                     order_buy = {
-                    'product_id': crypto,
-                    'side': 'buy',
-                    'type': 'limit',
-                    'size': size_order_bidask, ## numero ltc comprados
-                    'price': precio_random
-                    }
+                        "size": str(size_order_bidask),
+                        "price": "136.05",
+                        "side": "buy",
+                        # 'type': "market",
+                        "product_id": crypto}
+
                     try:
                         r3 = rq.post(api_url + 'orders', json=order_buy, auth=auth)
                         ordenes_compra_realizadas = r3.json()
                         id_compra = ordenes_compra_realizadas['id']
-                        ordenes_compra[id_compra]={'id_compra':id_compra}
-                        ordenes_compra[id_compra].update({'precio_compra':round(float(ordenes_compra_realizadas['price']),2)})
-                        ordenes_compra[id_compra].update({'contador':1})
-                        ordenes_compra[id_compra].update({'id_venta':''})
-                        ordenes_compra[id_compra].update({'estado_compra':'open'})
-                        ordenes_compra[id_compra].update({'estado_venta':''}) ## '' or 'open' or 'filled'
-                        ordenes_compra[id_compra].update({'serial':serial_number})
+                        ordenes_compra[id_compra] = {'id_compra': id_compra}
+                        ordenes_compra[id_compra].update({'precio_compra': round(float(ordenes_compra_realizadas['price']), 2)})
+                        ordenes_compra[id_compra].update({'contador': 1})
+                        ordenes_compra[id_compra].update({'id_venta': ''})
+                        ordenes_compra[id_compra].update({'estado_compra': 'open'})
+                        ordenes_compra[id_compra].update({'estado_venta': ''}) ## '' or 'open' or 'filled'
+                        ordenes_compra[id_compra].update({'serial': serial_number})
                         serial_number += 1
                         disparador2 += 1 # Para limitar el numero de compras
-                        print('## BUY order %s SHOOTED in %s eur ##' %(ordenes_compra[id_compra]['id_compra'], ordenes_compra[id_compra]['precio_compra'])) ## añadir en eur el valor que he comprado y el valor al que lo vendo reflejando ganancia
+                        print('## BUY order %s SHOOTED in %s eur ##' % (ordenes_compra[id_compra]['id_compra'], ordenes_compra[id_compra]['precio_compra'])) ## añadir en eur el valor que he comprado y el valor al que lo vendo reflejando ganancia
                     except:
                         time.sleep(0.1) #0.5
                         continue #pass
