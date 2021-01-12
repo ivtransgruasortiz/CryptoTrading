@@ -74,6 +74,7 @@ auth = CoinbaseExchangeAuth(kiko, sandra, pablo)
 #
 crypto = "LTC-EUR"
 api_url = 'https://api.pro.coinbase.com/' ## la real
+# api_url = 'https://api.coinbase.com/v2/'
 account = rq.get(api_url + 'accounts', auth=auth)
 account1 = account.json()
 
@@ -87,7 +88,7 @@ for item in account1:
 #
 cifra_origen = 100
 pag_historic = 10
-hist_df = historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic)
+hist_df = historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, version='new')
 
 ## LIMITS UPPER AND LOWER TO LIMIT OPERATIONS BY STATISTICS
 #
@@ -307,7 +308,7 @@ while True:
             if ((item['side']=='buy')&(float(item['filled_size'])==0)&(item['id'] in ordenes_compra.keys())):
                 ordenes_compra[item['id']]['contador']+=1
                 if ordenes_compra[item['id']]['contador'] > n_ciclos_to_cancel:
-                    r2 = rq.delete(api_url + 'orders/' + item['id'], auth = auth)
+                    r2 = rq.delete(api_url + 'orders/' + item['id'], auth=auth)
                     disparador2 -= 1
                     print('## --CANCELED-- BUY order %s in %s eur ##' %(item['id'], ordenes_compra[item['id']]['precio_compra']))
                     del (ordenes_compra[item['id']])
@@ -395,14 +396,14 @@ while True:
 
         if cond1:
                     order_buy = {
-                        "size": str(size_order_bidask),
-                        "price": "136.05",
+                        "size": size_order_bidask,
+                        "price": 90.05,
                         "side": "buy",
                         # 'type': "market",
                         "product_id": crypto}
 
                     try:
-                        r3 = rq.post(api_url + 'orders', json=order_buy, auth=auth)
+                        r3 = rq.post(api_url + 'orders', data=json.dumps(order_buy), auth=auth)
                         ordenes_compra_realizadas = r3.json()
                         id_compra = ordenes_compra_realizadas['id']
                         ordenes_compra[id_compra] = {'id_compra': id_compra}
