@@ -403,6 +403,7 @@ while True:
                         "product_id": crypto}
 
                     try:
+                        # r3 = rq.post(api_url + 'orders', json=order_buy, auth=auth)
                         r3 = rq.post(api_url + 'orders', data=json.dumps(order_buy), auth=auth)
                         ordenes_compra_realizadas = r3.json()
                         id_compra = ordenes_compra_realizadas['id']
