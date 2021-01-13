@@ -41,7 +41,7 @@ else:
     system = sys.platform
 
 from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial, tiempo_pausa, historic_df, \
-    CoinbaseExchangeAuth
+    CoinbaseExchangeAuth, buy_sell
 import yaml
 
 ## Importar datos-configuraciones-funciones
@@ -270,8 +270,8 @@ t_inicial = time.time()
 freq = 3
 period = 1/freq
 
-while True:
-    try:
+# while True:
+#     try:
         start_time = time.time()
 
         ## Ultimas ordenes lanzadas tanto de compra como de venta
@@ -382,7 +382,8 @@ while True:
         n_ciclos10 = freq * 2400
         n_ciclos15 = freq * 5400
         n_ciclos20 = freq * 10800
-        regla_tiempo_minimo_ejecucion = len(precio_bidask) > n_ciclos5 #max(n_ciclo)
+        regla_tiempo_minimo_ejecucion = len(precio_bidask) > n_ciclos5
+
         if regla_tiempo_minimo_ejecucion:
             regla_oportunidad_5 = (precio_venta_bidask <= precio_bidask[-n_ciclos5])
         else:
@@ -391,35 +392,60 @@ while True:
         # regla_oportunidad_15 = (precio_venta_bidask <= precio_bidask[-n_ciclos15])
         # regla_oportunidad_20 = (precio_venta_bidask <= precio_bidask[-n_ciclos20])
 
-        cond1 = (regla_inicio_disponibilidad_eur and regla_orden_compra_lanzada and
+        sum_conditions = (regla_inicio_disponibilidad_eur and regla_orden_compra_lanzada and
             regla_dif_bidask and regla_tiempo_minimo_ejecucion and regla_oportunidad_5)
+        sum_conditions = True
+        precio_venta_bidask=100
 
-        if cond1:
-                    order_buy = {
-                        "size": size_order_bidask,
-                        "price": 90.05,
-                        "side": "buy",
-                        # 'type': "market",
-                        "product_id": crypto}
+        ordenes_compra_realizadas = buy_sell('buy', crypto, sum_conditions, float(size_order_bidask),
+                                             float(precio_venta_bidask), 'limit', api_url, auth)
 
-                    try:
-                        # r3 = rq.post(api_url + 'orders', json=order_buy, auth=auth)
-                        r3 = rq.post(api_url + 'orders', data=json.dumps(order_buy), auth=auth)
-                        ordenes_compra_realizadas = r3.json()
-                        id_compra = ordenes_compra_realizadas['id']
-                        ordenes_compra[id_compra] = {'id_compra': id_compra}
-                        ordenes_compra[id_compra].update({'precio_compra': round(float(ordenes_compra_realizadas['price']), 2)})
-                        ordenes_compra[id_compra].update({'contador': 1})
-                        ordenes_compra[id_compra].update({'id_venta': ''})
-                        ordenes_compra[id_compra].update({'estado_compra': 'open'})
-                        ordenes_compra[id_compra].update({'estado_venta': ''}) ## '' or 'open' or 'filled'
-                        ordenes_compra[id_compra].update({'serial': serial_number})
-                        serial_number += 1
-                        disparador2 += 1 # Para limitar el numero de compras
-                        print('## BUY order %s SHOOTED in %s eur ##' % (ordenes_compra[id_compra]['id_compra'], ordenes_compra[id_compra]['precio_compra'])) ## añadir en eur el valor que he comprado y el valor al que lo vendo reflejando ganancia
-                    except:
-                        time.sleep(0.1) #0.5
-                        continue #pass
+        id_compra = ordenes_compra_realizadas['id']
+
+
+        ## implementar esto -->
+        # ordenes_compra[id_compra] = {'id_compra': id_compra}
+        # ordenes_compra[id_compra].update({'precio_compra': round(float(ordenes_compra_realizadas['price']), 2)})
+        # ordenes_compra[id_compra].update({'contador': 1})
+        # ordenes_compra[id_compra].update({'id_venta': ''})
+        # ordenes_compra[id_compra].update({'estado_compra': 'open'})
+        # ordenes_compra[id_compra].update({'estado_venta': ''})  ## '' or 'open' or 'filled'
+        # ordenes_compra[id_compra].update({'serial': serial_number})
+        # serial_number += 1
+        # disparador2 += 1  # Para limitar el numero de compras
+        # print('## BUY order %s SHOOTED in %s eur ##' % (ordenes_compra[id_compra]['id_compra'],
+        #                                                 ordenes_compra[id_compra]['precio_compra']))  ## añadir en eur el valor que he comprado y el valor al que lo vendo reflejando ganancia
+        # print(ordenes_compra_realizadas)
+
+
+        ### old
+        # if sum_conditions:
+        #             order_buy = {
+        #                 # 'type': "market",
+        #                 "size": size_order_bidask,
+        #                 "price": precio_venta_bidask,
+        #                 "side": "buy",
+        #                 "product_id": crypto
+        #             }
+        #
+        #             try:
+        #                 # r3 = rq.post(api_url + 'orders', json=order_buy, auth=auth)
+        #                 r3 = rq.post(api_url + 'orders', data=json.dumps(order_buy), auth=auth)
+        #                 ordenes_compra_realizadas = r3.json()
+        #                 id_compra = ordenes_compra_realizadas['id']
+        #                 ordenes_compra[id_compra] = {'id_compra': id_compra}
+        #                 ordenes_compra[id_compra].update({'precio_compra': round(float(ordenes_compra_realizadas['price']), 2)})
+        #                 ordenes_compra[id_compra].update({'contador': 1})
+        #                 ordenes_compra[id_compra].update({'id_venta': ''})
+        #                 ordenes_compra[id_compra].update({'estado_compra': 'open'})
+        #                 ordenes_compra[id_compra].update({'estado_venta': ''}) ## '' or 'open' or 'filled'
+        #                 ordenes_compra[id_compra].update({'serial': serial_number})
+        #                 serial_number += 1
+        #                 disparador2 += 1 # Para limitar el numero de compras
+        #                 print('## BUY order %s SHOOTED in %s eur ##' % (ordenes_compra[id_compra]['id_compra'], ordenes_compra[id_compra]['precio_compra'])) ## añadir en eur el valor que he comprado y el valor al que lo vendo reflejando ganancia
+        #             except:
+        #                 time.sleep(0.1)
+        #                 pass
 
         ##############
         ### VENTA ###

@@ -31,20 +31,23 @@ import csv
 import lxml
 import urllib
 import statsmodels
-#import math
-#import pylab as pl
-#import seaborn as sns
-#import pylab
-#from pandas.tools.plotting import scatter_matrix
-#import sklearn
-#import nltk
-#from pandas_datareader import wb, DataReader
-#import wget
+
+
+# import math
+# import pylab as pl
+# import seaborn as sns
+# import pylab
+# from pandas.tools.plotting import scatter_matrix
+# import sklearn
+# import nltk
+# from pandas_datareader import wb, DataReader
+# import wget
 # from requests.auth import AuthBase
 
 ### AUTHENTICATION INTO COINBASE ###
 #
 class CoinbaseExchangeAuth(AuthBase):
+
     def __init__(self, api_key, secret_key, passphrase):
         self.api_key = api_key
         self.secret_key = secret_key
@@ -59,7 +62,6 @@ class CoinbaseExchangeAuth(AuthBase):
         signature = hmac.new(hmac_key, message.encode(), hashlib.sha256)
         # signature_b64 = signature.digest().encode('base64').rstrip('\n')
         signature_b64 = base64.b64encode(signature.digest()).decode()
-
         request.headers.update({
             'CB-ACCESS-SIGN': signature_b64,
             'CB-ACCESS-TIMESTAMP': timestamp,
@@ -67,74 +69,6 @@ class CoinbaseExchangeAuth(AuthBase):
             'CB-ACCESS-PASSPHRASE': self.passphrase,
             'Content-Type': 'application/json'})
         return request
-
-def sma(n,datos):
-    if (len(datos) > n):
-        media = sum(datos[-n:])/n
-        return media
-    else:
-        return datos[0]
-
-def ema(n,datos,alpha,media_ant):
-    if len(datos) > n:
-        expmedia = datos[-1]*alpha+(1-alpha)*media_ant[-1]
-        return expmedia
-    else:
-        return datos[0]
-
-def lag(n, df):
-    for i in range(n):
-        df['lag_%s' %(i+1)] = df['ltc_eur'].shift(i) - df['ltc_eur'].shift(i+1)
-
-def percent(p_ini,p_fin):
-    percen = (p_fin-p_ini)/abs(p_ini)
-    return percen
-
-def rsi(n,df1):
-    u = []
-    d = []
-    for i in range(1,len(df1)):
-        if df1[i]>=0:
-            u.append(df1[i])
-        else:
-            d.append(df1[i])
-    sumapos = sum(u)
-    sumneg = sum(d)
-    if (sumneg != 0):
-        rs = abs(sumapos/sumneg)
-        rsi_index = 100 - (100/(1+rs))
-    else:
-        rsi_index = 100
-    return rsi_index
-
-def compare_dates(df,fecha_inicio,fecha_final):
-    valor = []
-    for item in df:
-        try:
-            valor.append(time.strptime(item,'%Y-%m-%dT%H:%M:%S.%fZ')>=fecha_inicio)and(time.strptime(item,'%Y-%m-%dT%H:%M:%S.%fZ')<=fecha_final)
-        except:
-            valor.append(time.strptime(item,'%Y-%m-%dT%H:%M:%SZ')>=fecha_inicio)and(time.strptime(item,'%Y-%m-%dT%H:%M:%SZ')<=fecha_final)
-    return valor
-
-def valor_op(side,size,price,fee):
-    if side == 'buy':
-        signo = -1
-    elif side == 'sell':
-            signo = 1
-            fee = -float(fee)
-    valor = signo*(float(size)*float(price)+float(fee))
-    return valor
-
-def assign_serial(id_number, serial_dicc, seriales):
-    if id_number in serial_dicc.keys():
-        valor = seriales[id_number]
-    else:
-        valor = 0
-    return valor
-
-
-def imprime(cadena):
-    return print(cadena)
 
 def tiempo_pausa(inicio, freq):
     """
@@ -150,8 +84,41 @@ def tiempo_pausa(inicio, freq):
         pausa = 0
         print("la ejecución va ralentizada, hay que disminuir la frecuencia de ejecucion")
     print(pausa)
-    return(pausa)
+    return (pausa)
 
+def buy_sell(compra_venta, crypto, sum_conditions, size_order_bidask, precio_venta_bidask, tipo, api_url, auth):
+    '''
+        :param compra_venta: 'buy' or 'sell'
+        :param crypto: El producto de que se trate
+        :param sum_conditions: True or False, trigger para el lanzamiento si se cumplen condiciones
+        :param size_order_bidask: tamaño orden
+        :param precio_venta_bidask: precio al que se quiere comprar
+        :param tipo: market or limit, por defecto, limit (market es para no especificar precio)
+        :param api_url: url de conexion
+        :param auth: auth de conexion
+        :return:
+    '''
+    if sum_conditions:
+        order_buy = {
+            'type': tipo,
+            "size": size_order_bidask,
+            "price": precio_venta_bidask,
+            "side": compra_venta,
+            "product_id": crypto
+        }
+        try:
+            # r3 = rq.post(api_url + 'orders', json=order_buy, auth=auth)
+            r3 = rq.post(api_url + 'orders', data=json.dumps(order_buy), auth=auth)
+            ordenes_compra_realizadas = r3.json()
+        except:
+            time.sleep(0.1)
+            ordenes_compra_realizadas = []
+            print('error')
+            pass
+        return ordenes_compra_realizadas
+
+##### old #####
+#
 def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, version='old'):
     ### INICIO tramo para datos anteriores ###
     #
@@ -180,8 +147,9 @@ def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, versi
             comp = False
         if system == 'linux':
             for i in tqdm.trange(pag_historic):  # 200  SON UNOS 12 DIAS APROX
-                r = rq.get(api_url + 'products/' + crypto + '/trades?after=%s' % (cifra_origen + coincide * 100 - i * 100),
-                           auth=auth)
+                r = rq.get(
+                    api_url + 'products/' + crypto + '/trades?after=%s' % (cifra_origen + coincide * 100 - i * 100),
+                    auth=auth)
                 try:
                     a = [float(x['price']) for x in r.json()]
                 except:
@@ -197,8 +165,9 @@ def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, versi
                 vect_hist.update(c)
         if system == 'win32':
             for i in range(pag_historic):
-                r = rq.get(api_url + 'products/' + crypto + '/trades?after=%s' % (cifra_origen + coincide * 100 - i * 100),
-                           auth=auth)
+                r = rq.get(
+                    api_url + 'products/' + crypto + '/trades?after=%s' % (cifra_origen + coincide * 100 - i * 100),
+                    auth=auth)
                 try:
                     a = [float(x['price']) for x in r.json()]
                 except:
@@ -216,9 +185,78 @@ def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, versi
         hist_df.columns = [crypto]
         hist_df = hist_df.sort_index(axis=0)
     else:
-        r = rq.get(api_url + 'products/' + crypto + '/trades?before=%s&limit=%s' % (pag_historic+1, 100), auth=auth)
+        r = rq.get(api_url + 'products/' + crypto + '/trades?before=%s&limit=%s' % (pag_historic + 1, 100), auth=auth)
         hist_df = {dt.datetime.strptime(x['time'], '%Y-%m-%dT%H:%M:%S.%fZ'): float(x['price']) for x in r.json()}
         hist_df = pd.DataFrame.from_dict(hist_df, orient='index')
         hist_df.columns = [crypto]
         hist_df = hist_df.sort_index(axis=0)
     return hist_df
+
+def sma(n, datos):
+    if (len(datos) > n):
+        media = sum(datos[-n:]) / n
+        return media
+    else:
+        return datos[0]
+
+def ema(n, datos, alpha, media_ant):
+    if len(datos) > n:
+        expmedia = datos[-1] * alpha + (1 - alpha) * media_ant[-1]
+        return expmedia
+    else:
+        return datos[0]
+
+def lag(n, df):
+    for i in range(n):
+        df['lag_%s' % (i + 1)] = df['ltc_eur'].shift(i) - df['ltc_eur'].shift(i + 1)
+
+def percent(p_ini, p_fin):
+    percen = (p_fin - p_ini) / abs(p_ini)
+    return percen
+
+def rsi(n, df1):
+    u = []
+    d = []
+    for i in range(1, len(df1)):
+        if df1[i] >= 0:
+            u.append(df1[i])
+        else:
+            d.append(df1[i])
+    sumapos = sum(u)
+    sumneg = sum(d)
+    if (sumneg != 0):
+        rs = abs(sumapos / sumneg)
+        rsi_index = 100 - (100 / (1 + rs))
+    else:
+        rsi_index = 100
+    return rsi_index
+
+def compare_dates(df, fecha_inicio, fecha_final):
+    valor = []
+    for item in df:
+        try:
+            valor.append(time.strptime(item, '%Y-%m-%dT%H:%M:%S.%fZ') >= fecha_inicio) and (
+                    time.strptime(item, '%Y-%m-%dT%H:%M:%S.%fZ') <= fecha_final)
+        except:
+            valor.append(time.strptime(item, '%Y-%m-%dT%H:%M:%SZ') >= fecha_inicio) and (
+                    time.strptime(item, '%Y-%m-%dT%H:%M:%SZ') <= fecha_final)
+    return valor
+
+def valor_op(side, size, price, fee):
+    if side == 'buy':
+        signo = -1
+    elif side == 'sell':
+        signo = 1
+        fee = -float(fee)
+    valor = signo * (float(size) * float(price) + float(fee))
+    return valor
+
+def assign_serial(id_number, serial_dicc, seriales):
+    if id_number in serial_dicc.keys():
+        valor = seriales[id_number]
+    else:
+        valor = 0
+    return valor
+
+def imprime(cadena):
+    return print(cadena)
