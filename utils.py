@@ -43,7 +43,7 @@ import statsmodels
 # from pandas_datareader import wb, DataReader
 # import wget
 # from requests.auth import AuthBase
-
+import dateutil.parser
 ### AUTHENTICATION INTO COINBASE ###
 #
 class CoinbaseExchangeAuth(AuthBase):
@@ -186,11 +186,65 @@ def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, versi
         hist_df = hist_df.sort_index(axis=0)
     else:
         r = rq.get(api_url + 'products/' + crypto + '/trades?before=%s&limit=%s' % (pag_historic + 1, 100), auth=auth)
-        hist_df = {dt.datetime.strptime(x['time'], '%Y-%m-%dT%H:%M:%S.%fZ'): float(x['price']) for x in r.json()}
+        # hist_df = {dt.datetime.strptime(x['time'], '%Y-%m-%dT%H:%M:%S.%fZ'): float(x['price']) for x in r.json()}
+        hist_df = {dateutil.parser.parse(x['time']): float(x['price']) for x in r.json()}
         hist_df = pd.DataFrame.from_dict(hist_df, orient='index')
         hist_df.columns = [crypto]
         hist_df = hist_df.sort_index(axis=0)
     return hist_df
+
+def pinta_historico(hist_df, crypto):
+    ## PERCENTILES
+    #
+    percent_sup = 70
+    percent_inf = 100 - percent_sup
+    lim_sup_1 = stats.scoreatpercentile(hist_df[crypto], percent_sup)
+    lim_inf_1 = stats.scoreatpercentile(hist_df[crypto], percent_inf)
+    p70 = stats.scoreatpercentile(hist_df[crypto], 70)
+    p50 = stats.scoreatpercentile(hist_df[crypto], 50)
+    p30 = stats.scoreatpercentile(hist_df[crypto], 30)
+    p10 = stats.scoreatpercentile(hist_df[crypto], 10)
+    fig1 = plt.figure(1)
+    plt.hist(hist_df[crypto], bins=55)
+    plt.show()
+    print('\nLimite PRINCIPAL para limitar operaciones en  P%s = %s eur.' % (percent_sup, lim_sup_1))
+    print('\nLimite SECUNDARIO para limitar operaciones en P%s = %s eur.' % (percent_inf, lim_inf_1))
+
+    ### CALCULO MEDIAS MOVILES EXPONENCIALES - EMA'S
+    mediavar_rapida = []
+    mediavar_lenta = []
+    expmediavar_rapida = []
+    expmediavar_lenta = []
+    n_rapida = 10
+    n_lenta = 20
+    for i in range(len(hist_df[crypto])):
+        mediavar_rapida.append(sma(n_rapida, hist_df[crypto].values[:i + 1]))
+        mediavar_lenta.append(sma(n_lenta, hist_df[crypto].values[:i + 1]))
+        if len(expmediavar_rapida) <= n_rapida + 1:
+            expmediavar_rapida.append(mediavar_rapida[-1])
+        else:
+            expmediavar_rapida.append(
+                ema(n_rapida, hist_df[crypto].values[:i + 1], 2.0 / (n_rapida + 1), expmediavar_rapida))
+
+        if len(expmediavar_lenta) <= n_lenta + 1:
+            expmediavar_lenta.append(mediavar_lenta[-1])
+        else:
+            expmediavar_lenta.append(
+                ema(n_lenta, hist_df[crypto].values[:i + 1], 2.0 / (n_lenta + 1), expmediavar_lenta))
+
+    ### ADD COLUMNS TO DATAFRAME
+    hist_df['expmedia_rapida'] = expmediavar_rapida
+    hist_df['expmedia_lenta'] = expmediavar_lenta
+
+    ## PLOT TRADES AND EMA'S
+    fig2 = plt.figure(2)
+    ax2 = fig2.add_subplot(111)
+    ax2.plot(hist_df[crypto], label=crypto)
+    ax2.plot(hist_df['expmedia_rapida'], label='expmedia_rapida')
+    ax2.plot(hist_df['expmedia_lenta'], label='expmedia_lenta')
+    ax2.legend()
+    plt.xticks(rotation='45')
+    plt.show()
 
 def sma(n, datos):
     if (len(datos) > n):
