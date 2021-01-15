@@ -13,11 +13,13 @@ import sys
 import os
 import time
 import datetime
+import timeit
 import pandas as pd
 import numpy as np
 import json
 import matplotlib.pyplot as plt
 import requests as rq
+import pymongo
 import dateutil.parser
 import hmac, hashlib, base64
 from requests.auth import AuthBase
@@ -41,7 +43,7 @@ if sys.platform == 'win32':
 else:
     system = sys.platform
 
-from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial, tiempo_pausa, historic_df, \
+from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial, tiempo_pausa_new, historic_df, \
     CoinbaseExchangeAuth, buy_sell, pinta_historico
 import yaml
 
@@ -55,21 +57,46 @@ print(sys.platform + ' System')
 print('#####################################')
 print('\n### Importing Libraries... ###')
 
-# ## Parte para cumplir 3 ejecuciones por segundo como ejemplo
+# ## Parte para cumplir freq_exec ejecuciones por segundo como ejemplo
 # #
+# freq_exec = 2
+# t00 = time.perf_counter()
+# contador_ciclos = 0
 # for i in range(10):
-#     inicio = datetime.now()
-#     time.sleep(.32635373)
-#     a = tiempo_pausa(inicio, 1/3)
+#     t0 = time.perf_counter()
+#     time.sleep(.12635373)
+#     a = tiempo_pausa_new(time.perf_counter() - t0, freq_exec)
+#     print(time.perf_counter() - t0)
+#     print(f'tiempo transcurrido:{time.perf_counter() - t00}')
+#     contador_ciclos += 1 ## para poder comparar hacia atrśs freq*time_required = num_ciclos hacia atras
 #     time.sleep(a)
+
+# ############################################################################################################################################################################
+# # Authentication into MongoDB_Atlas
+# ############################################################################################################################################################################
+# ### Conexion a la bbdd
+# #
+# client = pymongo.MongoClient(
+#     "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority"
+#     % (doc['Credentials'][3], doc['Credentials'][4], doc['Credentials'][5]))
+# db = client.get_database(doc['Credentials'][5])
+#
+# # #lectura
+# # records = db.premios_records
+# # results = list(records.find({}, {"_id": 0}))  # Asi omitimos el _id que por defecto nos agrega mongo
+# # df_results = pd.DataFrame.from_dict(results)
+#
+# # #escritura
+# # records = db.premios_records
+# # records.remove()
+# # records.insert(df_json)
+# ############################################################################################################################################################################
 
 # ### AUTHENTICATION INTO COINBASE ###
 #
 print('\n### Authenticating... ###')
-kiko = doc['Credentials'][0] #sys.argv[1] #text
-sandra = doc['Credentials'][1]  #sys.argv[2] #text
-pablo = doc['Credentials'][2] #sys.argv[3] #text
-auth = CoinbaseExchangeAuth(kiko, sandra, pablo)
+auth = CoinbaseExchangeAuth(doc['Credentials'][0], doc['Credentials'][1], doc['Credentials'][2])
+#sys.argv[1], sys.argv[2], sys.argv[3]
 
 ### GET ACCOUNTS ###
 #
@@ -84,13 +111,13 @@ disp_ini = {}
 for item in account1:
     disp_ini.update({item['currency']: item['available']})
 
-### INICIO tramo para datos anteriores ###
+# ### INICIO tramo para datos anteriores ###
+# #
+# cifra_origen = 100
+# pag_historic = 10
+# hist_df = historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, version='new')
 #
-cifra_origen = 100
-pag_historic = 10
-hist_df = historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, version='new')
-
-pinta_historico(hist_df, crypto)
+# pinta_historico(hist_df, crypto)
 
 
 ####################################################
@@ -100,118 +127,56 @@ print('\n### Data OK! ###')
 print('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) to cancel and view results')
 
 ## INITIAL RESET FOR VARIABLES
-
+#
 size_order_bidask = 0.1
 limit_dif_bidask = 1
-n_ciclos_to_cancel = 50
-porcentaje_caida = 8
-porcentaje_beneficio = 3
-disp = 0 # Para ajustar historico
-disp1 = 0 # Para ajustar historico
+porcentaje_caida_1 = 6
+porcentaje_caida_2 = 8
+porcentaje_caida_3 = 10
+porcentaje_caida_4 = 12
+porcentaje_caida_5 = 15
+porcentaje_caida_6 = 18
 
-serial_number = 1 # Para relacionar las ordenes de compra-venta
+porcentaje_beneficio = 3
 
 precio = []
 precio_bidask = []
 fecha = []
 crypto_price = []
 
-seg = 0
-
-t_time = []
-
-n_rapida_bidask = 4
-n_lenta_bidask = 12
-n_rapida = 100
-n_lenta = 200
-alpha_rapida_bidask = 2.0/(n_rapida_bidask+1)
-alpha_lenta_bidask = 2.0/(n_lenta_bidask+1)
-precio_compra_bidask_ejecutado = []
-precio_venta_bidask_ejecutado = []
-
-list_trades_id = []
-n_precios_hist = len(hist_df) # Longitud de lista de valores para calcular el hist y actualizar el valor máximo
-hist_margin = np.around(list(hist_df[crypto][-n_precios_hist-1:-1].values), 2) # vector de precios pasados al que agregar los nuevos precios y que nos sirva para establecer nuevos límites a la compra...
-n_ciclos_to_hist = 120 # 120 estaba inicialmente... número de ciclos para meter ultima orden en hist para calcular limite de operacion
-ids_comp_vent = {}
-contadores = {}
-
-seriales = {}
-relacion_id_compra_venta = {}
-forze_venta = False
-plt.ion()
-
-try:
-    f = open('filess_compra.txt', 'r')
-    ordenes_compra = json.load(f)
-    if (ordenes_compra != {}):
-        print('\nHanging Purchases --> Yes \nDetails: ')
-        print('\n')
-        print(ordenes_compra)
-        print('\n')
-    else:
-        print('\nHanging Purchases --> No')
-        print('\n')
-
-    f.close()
-except:
-    ordenes_compra = {}
-try:
-    f = open('filess_venta.txt', 'r')
-    ordenes_venta = json.load(f)
-    f.close()
-except:
-    ordenes_venta = {}
-
-####################################################################################################################### END-NEW
-
-### para los ficheros de registro ###
+## Parte para cumplir freq_exec ejecuciones por segundo como ejemplo
 #
-# ## Fecha y hora inicial del codigo
-# fecha_ini = datetime.datetime.utcnow()
-# #fecha_ini = unicode(datetime.datetime.strftime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ'))
-# fecha_ini = datetime.datetime.strftime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ')
-# fecha_ini = time.strptime(fecha_ini, '%Y-%m-%dT%H:%M:%S.%fZ')
-# ## Fecha apertura operaciones hoy
-# fecha_ininombre = time.strftime("%c")
-# if system == 'linux2':
-#     name_fich = 'log_' + fecha_ininombre + '.txt'
-# else:
-#     name_fich = 'log.txt'
+freq_exec = 0.5
+t00 = time.perf_counter()
+contador_ciclos = 0
+
+while True:
+    try:
+        contador_ciclos += 1  ## para poder comparar hacia atrśs freq*time_required = num_ciclos hacia atras
+        t0 = time.perf_counter()
+        tiempo_transcurrido = time.perf_counter() - t00
+        time.sleep(0.566654)
 
 
-################################################
-### formas de rellenar un diccionario #########
-##############################################
-## Forma 1
-#ordenes = {} # 'id', 'contador', 'precio_compra', 'precio_venta', 'estado_compra', 'estado_venta'
-#ordenes['a123asd']={}
-#ordenes['a123asd']['id']='a123asd'
-#ordenes['a123asd']['precio']=27
-### Forma 2
-#ordenes = {} # 'id', 'contador', 'precio_compra', 'precio_venta', 'estado_compra', 'estado_venta'
-#ordenes['a123asd']={'contador':1}
-#ordenes['a123asd'].update({'id_venta':'jue837'})
+        pausa = tiempo_pausa_new(time.perf_counter() - t0, freq_exec)
+        time.sleep(pausa)
+    except (KeyboardInterrupt, SystemExit):  # ctrl + c
+        print('All done')
+        break
 
-#########################################################
-### formas de escribir en un fichero de texto ##########
-#######################################################
-#fichero = open(name_fich, 'at')
-#fichero.write('\n\n## ATTENTION!!##  SELL order %s EXECUTED in %s eur (for buy-order %s EXECUTED in %s eur)  ##' %(item, ordenes_venta[item]['precio_venta'], ordenes_venta[item]['id_compra'], ordenes_compra[ordenes_venta[item]['id_compra']]['precio_compra']))
-#fichero.write('\nGanancia operacion: %s eur.' %(ganancias[-1]))
-#fichero.write('\nGanancia acumulada: %s eur.' %(sum(ganancias)))
-#fichero.write(time.strftime("%c") + '\n')
-#fichero.close()
-###########
-###########
 
-t_inicial = time.time()
-freq = 3
-period = 1/freq
 
-# while True:
-#     try:
-        start_time = time.time()
+
+
+
+
+
+
+
+
+
+
+
 
         ## Ultimas ordenes lanzadas tanto de compra como de venta
         #

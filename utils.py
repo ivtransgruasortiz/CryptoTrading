@@ -86,6 +86,19 @@ def tiempo_pausa(inicio, freq):
     print(pausa)
     return (pausa)
 
+def tiempo_pausa_new(exec_time, freq):
+    """
+    FUNCION de usuario que nos da la pausa que debe
+    tener un programa para ejecutar algo según una frecuencia
+    preestablecida p. ejemplo 1/3 (3 ciclos por segundo) etc... al princicipio del blucle se reinicia la variable inicio now()
+    """
+    pausa = 1/freq - exec_time
+    if pausa < 0:
+        pausa = 0
+        print("la ejecución va ralentizada, hay que disminuir la frecuencia de ejecucion")
+    print(pausa)
+    return pausa
+
 def buy_sell(compra_venta, crypto, sum_conditions, size_order_bidask, precio_venta_bidask, tipo, api_url, auth):
     '''
         :param compra_venta: 'buy' or 'sell'
