@@ -52,9 +52,11 @@ from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_s
 import yaml
 
 ## Importar datos-configuraciones-funciones
-#
-with open('config.yaml', 'r') as config_file:
-    doc = yaml.safe_load(config_file)
+try:
+    with open('config.yaml', 'r') as config_file:
+        doc = yaml.safe_load(config_file)
+except:
+    pass
 
 print('#####################################')
 print(sys.platform + ' System')
@@ -97,19 +99,18 @@ print('\n### Importing Libraries... ###')
 # ############################################################################################################################################################################
 
 # ### AUTHENTICATION INTO COINBASE ###
-#
 print('\n### Authenticating... ###')
-auth = CoinbaseExchangeAuth(doc['Credentials'][0], doc['Credentials'][1], doc['Credentials'][2])
-#sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    auth = CoinbaseExchangeAuth(doc['Credentials'][0], doc['Credentials'][1], doc['Credentials'][2])
+except:
+    auth = CoinbaseExchangeAuth(sys.argv[1], sys.argv[2], sys.argv[3])
 
 ### GET ACCOUNTS ###
-#
 crypto = "LTC-EUR"
 crypto_short = crypto.split('-')[0]
 api_url = 'https://api.pro.coinbase.com/'
 
 ### Disp_iniciales ###
-#
 account = rq.get(api_url + 'accounts', auth=auth)
 account = account.json()
 disp_ini = {}
