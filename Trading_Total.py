@@ -137,7 +137,6 @@ print('\n### Data OK! ###')
 print('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) to cancel and view results')
 
 ## INITIAL RESET FOR VARIABLES
-#
 size_order_bidask = 0.1
 limit_dif_bidask = 1
 porcentaje_caida_1 = 6
@@ -155,7 +154,6 @@ fecha = []
 crypto_price = []
 
 ## Parte para cumplir freq_exec ejecuciones por segundo como ejemplo
-#
 freq_exec = 1
 t00 = time.perf_counter()
 contador_ciclos = 0
