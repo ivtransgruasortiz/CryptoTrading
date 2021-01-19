@@ -13,12 +13,16 @@ import sys
 import os
 import time
 import datetime
-import timeit
 import pandas as pd
 import numpy as np
 import json
 import matplotlib.pyplot as plt
 import requests as rq
+import math
+import timeit
+import signal
+import threading
+import keyboard
 import pymongo
 import dateutil.parser
 import hmac, hashlib, base64
@@ -101,15 +105,20 @@ auth = CoinbaseExchangeAuth(doc['Credentials'][0], doc['Credentials'][1], doc['C
 ### GET ACCOUNTS ###
 #
 crypto = "LTC-EUR"
+crypto_short = crypto.split('-')[0]
 api_url = 'https://api.pro.coinbase.com/'
-account = rq.get(api_url + 'accounts', auth=auth)
-account1 = account.json()
 
 ### Disp_iniciales ###
 #
+account = rq.get(api_url + 'accounts', auth=auth)
+account = account.json()
 disp_ini = {}
-for item in account1:
-    disp_ini.update({item['currency']: item['available']})
+for item in account:
+    disp_ini.update({item['currency']: float(item['available'])})
+
+### fees ###
+fees = rq.get(api_url + 'fees', auth=auth)
+fees = round(float('%.4f' % (float(fees.json()['taker_fee_rate']))), 4)
 
 # ### INICIO tramo para datos anteriores ###
 # #
@@ -131,13 +140,13 @@ print('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) to
 size_order_bidask = 0.1
 limit_dif_bidask = 1
 porcentaje_caida_1 = 6
-porcentaje_caida_2 = 8
-porcentaje_caida_3 = 10
-porcentaje_caida_4 = 12
-porcentaje_caida_5 = 15
-porcentaje_caida_6 = 18
-
-porcentaje_beneficio = 3
+porcentaje_beneficio_1 = 3
+tiempo_caida_1 = 30*60
+# porcentaje_caida_2 = 8
+# porcentaje_caida_3 = 10
+# porcentaje_caida_4 = 12
+# porcentaje_caida_5 = 15
+# porcentaje_caida_6 = 18
 
 precio = []
 precio_bidask = []
@@ -146,26 +155,95 @@ crypto_price = []
 
 ## Parte para cumplir freq_exec ejecuciones por segundo como ejemplo
 #
-freq_exec = 0.5
+freq_exec = 1
 t00 = time.perf_counter()
 contador_ciclos = 0
+ordenes = []
+tamanio_listas_min = freq_exec * tiempo_caida_1
+trigger = 1
 
 while True:
     try:
-        contador_ciclos += 1  ## para poder comparar hacia atrśs freq*time_required = num_ciclos hacia atras
         t0 = time.perf_counter()
         tiempo_transcurrido = time.perf_counter() - t00
-        time.sleep(0.566654)
+        time.sleep(0.5)
 
+        ### BidAsk ###
+        try:
+            bidask = rq.get(api_url + 'products/' + crypto + '/book?level=1')
+            bidask = bidask.json()
+            ordenes.append(bidask)
+            precio_compra_bidask = float(ordenes[-1]['bids'][0][0])
+            precio_venta_bidask = float(ordenes[-1]['asks'][0][0])
+            # precio_compra_bidask = round(float('%.2f' % (float(ordenes[-1]['bids'][0][0]))), 2)
+            # precio_venta_bidask = round(float('%.2f' % (float(ordenes[-1]['asks'][0][0]))), 2)
+        except:
+            pass
 
-        pausa = tiempo_pausa_new(time.perf_counter() - t0, freq_exec)
-        time.sleep(pausa)
+        ### Limitacion tamaño lista ###
+        if len(ordenes) > tamanio_listas_min:
+            ordenes.pop(0)
+
+        ### FONDOS_DISPONIBLES ##
+        account = rq.get(api_url + 'accounts', auth=auth)
+        account = account.json()
+        disp_ini = {}
+        for item in account:
+            disp_ini.update({item['currency']: float(item['available'])})
+        eur = math.trunc(disp_ini['EUR']*100)/100
+        crypto_quantity = math.trunc(disp_ini[crypto_short]*100)/100
+
+        ### Tamanio ordenes ###
+        size_order_bidask = math.trunc((eur*(1-fees)/precio_venta_bidask)*100)/100
+
+        ### Condiciones para compra-venta ###
+        condiciones_compra = False #trigger_compra_venta(disponibilidad_fondos y on_off_compra_venta), tamaño_listas, condicionales_precios
+        condiciones_venta = False #trigger_compra_venta, condicionales_para_venta(velocidad_subida estancada y margen_beneficios)
+
+        ### COMPRAS ###
+        if (trigger == 1) & condiciones_compra:
+            # buy_sell('buy', crypto, 'limit', api_url, auth, size_order_bidask, precio_venta_bidask) ## LIMIT
+            buy_sell('buy', crypto, 'market', api_url, auth, eur) ## MARKET
+            ### Tamanio ordenes ###
+            last_size_order_bidask = size_order_bidask
+            trigger = 0
+
+        ### ORDENES_LANZADAS ###
+        try:
+            # r = rq.get(api_url + 'products/' + crypto + '/trades?before=1&limit=2', auth=auth)
+            ordenes_lanzadas = rq.get(api_url + 'orders', auth=auth)
+            try:
+                ordenes_lanzadas = ordenes_lanzadas.json()
+            except:
+                pass
+        except:
+            time.sleep(0.1)
+            pass
+
+        ### VENTAS ###
+        if (trigger == 0) & (ordenes_lanzadas == []) & condiciones_venta:
+            ### FONDOS_DISPONIBLES ###
+            account = rq.get(api_url + 'accounts', auth=auth)
+            account = account.json()
+            disp_ini = {}
+            for item in account:
+                disp_ini.update({item['currency']: float(item['available'])})
+            # eur = math.trunc(disp_ini['EUR'] * 100) / 100
+            # crypto_quantity = math.trunc(disp_ini[crypto_short] * 100) / 100
+            funds_disp = math.trunc(disp_ini[crypto_short] * precio_compra_bidask * 100) / 100
+
+            # buy_sell('sell', crypto, 'limit', api_url, auth, last_size_order_bidask, precio_compra_bidask) ## LIMIT
+            buy_sell('sell', crypto, 'market', api_url, auth, funds_disp) ## MARKET
+            trigger = 0 ## cambiar a 1 cuando metamos las condiciones
+            print('via_libre')
+        else:
+            print('aun_no')
+
+        contador_ciclos += 1  ## para poder comparar hacia atrśs freq*time_required = num_ciclos hacia atras
+        time.sleep(tiempo_pausa_new(time.perf_counter() - t0, freq_exec))
     except (KeyboardInterrupt, SystemExit):  # ctrl + c
         print('All done')
         break
-
-
-
 
 
 

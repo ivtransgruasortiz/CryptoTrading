@@ -96,10 +96,9 @@ def tiempo_pausa_new(exec_time, freq):
     if pausa < 0:
         pausa = 0
         print("la ejecución va ralentizada, hay que disminuir la frecuencia de ejecucion")
-    print(pausa)
     return pausa
 
-def buy_sell(compra_venta, crypto, sum_conditions, size_order_bidask, precio_venta_bidask, tipo, api_url, auth):
+def buy_sell(compra_venta, crypto, tipo, api_url, auth, sizefunds=None, precio=None):
     '''
         :param compra_venta: 'buy' or 'sell'
         :param crypto: El producto de que se trate
@@ -111,24 +110,37 @@ def buy_sell(compra_venta, crypto, sum_conditions, size_order_bidask, precio_ven
         :param auth: auth de conexion
         :return:
     '''
-    if sum_conditions:
-        order_buy = {
+
+    if tipo == 'limit':
+        size_or_funds = 'size'
+    elif tipo == 'market':
+        size_or_funds = 'funds'
+    if compra_venta == 'buy':
+        order = {
             'type': tipo,
-            "size": size_order_bidask,
-            "price": precio_venta_bidask,
+            size_or_funds: sizefunds,
+            "price": precio,
             "side": compra_venta,
             "product_id": crypto
         }
-        try:
-            # r3 = rq.post(api_url + 'orders', json=order_buy, auth=auth)
-            r3 = rq.post(api_url + 'orders', data=json.dumps(order_buy), auth=auth)
-            ordenes_compra_realizadas = r3.json()
-        except:
-            time.sleep(0.1)
-            ordenes_compra_realizadas = []
-            print('error')
-            pass
-        return ordenes_compra_realizadas
+    elif compra_venta == 'sell':
+        order = {
+            'type': tipo,
+            size_or_funds: sizefunds,
+            "price": precio,
+            "side": compra_venta,
+            "product_id": crypto
+        }
+    try:
+        # r = rq.post(api_url + 'orders', json=order_buy, auth=auth) ##old
+        r = rq.post(api_url + 'orders', data=json.dumps(order), auth=auth)
+        ordenes = r.json()
+    except:
+        time.sleep(0.1)
+        ordenes = []
+        print('error')
+        pass
+    return ordenes
 
 ##### old #####
 #
