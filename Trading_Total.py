@@ -121,12 +121,11 @@ for item in account:
 fees = rq.get(api_url + 'fees', auth=auth)
 fees = round(float('%.4f' % (float(fees.json()['taker_fee_rate']))), 4)
 
-# ### INICIO tramo para datos anteriores ###
-# #
-# cifra_origen = 100
-# pag_historic = 10
-# hist_df = historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, version='new')
+### INICIO tramo para datos anteriores ###
 #
+cifra_origen = 100
+pag_historic = 100
+hist_df = historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, version='old', hist_new=True) #OLD representa mejor
 # pinta_historico(hist_df, crypto)
 
 
@@ -138,10 +137,7 @@ print('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) to
 
 ## INITIAL RESET FOR VARIABLES
 size_order_bidask = 0.1
-limit_dif_bidask = 1
-porcentaje_caida_1 = 6
-porcentaje_beneficio_1 = 3
-tiempo_caida_1 = 30*60
+
 # porcentaje_caida_2 = 8
 # porcentaje_caida_3 = 10
 # porcentaje_caida_4 = 12
@@ -157,9 +153,13 @@ crypto_price = []
 freq_exec = 1
 t00 = time.perf_counter()
 contador_ciclos = 0
-ordenes = []
+historico = True
+if historico:
+    ordenes = hist_df[['bids', 'asks', 'sequence']].to_dict(orient='records')
+else:
+    ordenes = []
 tamanio_listas_min = freq_exec * tiempo_caida_1
-trigger = 1
+trigger = True
 
 while True:
     try:
@@ -200,12 +200,18 @@ while True:
         condiciones_venta = False #trigger_compra_venta, condicionales_para_venta(velocidad_subida estancada y margen_beneficios)
 
         ### COMPRAS ###
-        if (trigger == 1) & condiciones_compra:
+        if (trigger == True) & condiciones_compra:
             # buy_sell('buy', crypto, 'limit', api_url, auth, size_order_bidask, precio_venta_bidask) ## LIMIT
             buy_sell('buy', crypto, 'market', api_url, auth, eur) ## MARKET
+
+            #new
+            account = rq.get(api_url + 'fills?product_id=' + crypto, auth=auth)
+            account.json()
+            #fin new
+
             ### Tamanio ordenes ###
             last_size_order_bidask = size_order_bidask
-            trigger = 0
+            trigger = False
 
         ### ORDENES_LANZADAS ###
         try:
@@ -220,7 +226,7 @@ while True:
             pass
 
         ### VENTAS ###
-        if (trigger == 0) & (ordenes_lanzadas == []) & condiciones_venta:
+        if (trigger == False) & (ordenes_lanzadas == []) & condiciones_venta:
             ### FONDOS_DISPONIBLES ###
             account = rq.get(api_url + 'accounts', auth=auth)
             account = account.json()
@@ -233,7 +239,7 @@ while True:
 
             # buy_sell('sell', crypto, 'limit', api_url, auth, last_size_order_bidask, precio_compra_bidask) ## LIMIT
             buy_sell('sell', crypto, 'market', api_url, auth, funds_disp) ## MARKET
-            trigger = 0 ## cambiar a 1 cuando metamos las condiciones
+            trigger = False ## cambiar a 1 cuando metamos las condiciones
             print('via_libre')
         else:
             print('aun_no')

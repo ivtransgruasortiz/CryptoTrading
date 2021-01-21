@@ -142,9 +142,7 @@ def buy_sell(compra_venta, crypto, tipo, api_url, auth, sizefunds=None, precio=N
         pass
     return ordenes
 
-##### old #####
-#
-def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, version='old'):
+def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, version='old', hist_new='False'):
     ### INICIO tramo para datos anteriores ###
     #
     if version == 'old':
@@ -153,6 +151,7 @@ def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, versi
         cont = 0
         vect_hist = {}
         b = []
+        df_new = pd.DataFrame()
         print('### Gathering Data... ')
         for i in tqdm.tqdm([100000000, 10000000, 1000000, 100000, 10000, 1000, 100]):
             while not comp:
@@ -177,6 +176,12 @@ def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, versi
                     auth=auth)
                 try:
                     a = [float(x['price']) for x in r.json()]
+                    new = [{'bids': [[float(x['price']), float(x['size']), 1]],
+                            'asks': [[float(x['price']), float(x['size']), 1]],
+                            'sequence': x['trade_id'],
+                            'time': x['time']} for x in r.json()]
+                    df_new_0 = pd.DataFrame.from_dict(new)
+                    df_new_0 = df_new_0.sort_values('time')
                 except:
                     continue
                 for x in r.json():
@@ -188,6 +193,7 @@ def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, versi
                 b.reverse()
                 c = dict(zip(b, a))
                 vect_hist.update(c)
+                df_new = pd.concat([df_new, df_new_0])
         if system == 'win32':
             for i in range(pag_historic):
                 r = rq.get(
@@ -216,8 +222,32 @@ def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, versi
         hist_df = pd.DataFrame.from_dict(hist_df, orient='index')
         hist_df.columns = [crypto]
         hist_df = hist_df.sort_index(axis=0)
+    if hist_new:
+        hist_df = df_new.sort_values('time')
     return hist_df
 
+def condiciones_buy_sell(tipo, trigger, freq_exec, ordenes, precio_compra_bidask, precio_venta_bidask):
+    porcentaje_caida_1 = 5
+    porcentaje_beneficio_1 = 2
+    tiempo_caida_1 = 60 * 60
+    ciclos_1 = int(freq_exec * tiempo_caida_1)
+    media_prev = ordenes[-10-ciclos_1:-ciclos_1]
+    media_prev = np.mean([x['asks'][0][0] for x in media_prev])
+    if (tipo == 'buy') & trigger & ((media_prev - precio_venta_bidask) > porcentaje_caida_1 * media_prev):
+        condicion = True
+        print('buy')
+    elif (tipo == 'sell') & (not trigger) & (precio_venta_bidask > porcentaje_beneficio_1 * ultimo_precio_compra):
+        condicion = True
+        print('sell')
+    else:
+        condicion = False
+    return condicion
+
+
+
+
+##### old #####
+#
 def pinta_historico(hist_df, crypto):
     ## PERCENTILES
     #
