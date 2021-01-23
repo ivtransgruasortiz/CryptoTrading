@@ -9,12 +9,9 @@ Created on Thu Jul  6 19:22:32 2017
 #############################
 ###-- WINDOWS OR LINUX --###
 ###########################
-import sys
-import os
-import time
-import datetime
 import pandas as pd
 import numpy as np
+import time
 import json
 import matplotlib.pyplot as plt
 import requests as rq
@@ -23,6 +20,10 @@ from requests.auth import AuthBase
 import datetime as dt
 from scipy import stats
 import tqdm
+import dateutil.parser
+import sys
+import os
+import datetime
 import timeit
 import scipy
 import tables
@@ -31,8 +32,6 @@ import csv
 import lxml
 import urllib
 import statsmodels
-
-
 # import math
 # import pylab as pl
 # import seaborn as sns
@@ -43,7 +42,6 @@ import statsmodels
 # from pandas_datareader import wb, DataReader
 # import wget
 # from requests.auth import AuthBase
-import dateutil.parser
 ### AUTHENTICATION INTO COINBASE ###
 #
 class CoinbaseExchangeAuth(AuthBase):
@@ -74,7 +72,7 @@ def tiempo_pausa(inicio, freq):
     """
     FUNCION de usuario que nos da la pausa que debe
     tener un programa para ejecutar algo según una frecuencia
-    preestablecida p. ejemplo 1/3 (3 ciclos por segundo) etc... al princicipio del blucle se reinicia la variable inicio now()
+    preestablecida p. ejemplo 1/3 (3 ciclos por segundo) etc... al princicipio del bucle se reinicia la variable inicio now()
     """
     from datetime import datetime
     fin = datetime.now()
@@ -97,6 +95,26 @@ def tiempo_pausa_new(exec_time, freq):
         pausa = 0
         print("la ejecución va ralentizada, hay que disminuir la frecuencia de ejecucion")
     return pausa
+
+def condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
+                         tiempo_caida_1, ordenes_lanzadas, tipo, trigger, freq_exec, ordenes, last_buy):
+    ciclos_1 = int(freq_exec * tiempo_caida_1)
+    media_prev = ordenes[-10-ciclos_1:-ciclos_1]
+    media_prev = np.mean([x['asks'][0][0] for x in media_prev])
+    if (tipo == 'buy') & (trigger) & (ordenes_lanzadas == []) & \
+            (precio_venta_bidask < media_prev * (1 - porcentaje_caida_1)):
+        condicion = True
+        precio = precio_venta_bidask
+        print('buy')
+    elif (tipo == 'sell') & (not trigger) & (ordenes_lanzadas == []) & \
+            (precio_compra_bidask > last_buy[-1] * (1 + porcentaje_beneficio_1)):
+        condicion = True
+        precio = precio_compra_bidask
+        print('sell')
+    else:
+        condicion = False
+        precio = None
+    return [condicion, precio]
 
 def buy_sell(compra_venta, crypto, tipo, api_url, auth, sizefunds=None, precio=None):
     '''
@@ -225,26 +243,6 @@ def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, versi
     if hist_new:
         hist_df = df_new.sort_values('time')
     return hist_df
-
-def condiciones_buy_sell(tipo, trigger, freq_exec, ordenes, precio_compra_bidask, precio_venta_bidask):
-    porcentaje_caida_1 = 5
-    porcentaje_beneficio_1 = 2
-    tiempo_caida_1 = 60 * 60
-    ciclos_1 = int(freq_exec * tiempo_caida_1)
-    media_prev = ordenes[-10-ciclos_1:-ciclos_1]
-    media_prev = np.mean([x['asks'][0][0] for x in media_prev])
-    if (tipo == 'buy') & trigger & ((media_prev - precio_venta_bidask) > porcentaje_caida_1 * media_prev):
-        condicion = True
-        print('buy')
-    elif (tipo == 'sell') & (not trigger) & (precio_venta_bidask > porcentaje_beneficio_1 * ultimo_precio_compra):
-        condicion = True
-        print('sell')
-    else:
-        condicion = False
-    return condicion
-
-
-
 
 ##### old #####
 #
