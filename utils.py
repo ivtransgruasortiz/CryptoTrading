@@ -21,17 +21,17 @@ import datetime as dt
 from scipy import stats
 import tqdm
 import dateutil.parser
-import sys
-import os
-import datetime
-import timeit
-import scipy
-import tables
-import matplotlib as mpl
-import csv
-import lxml
-import urllib
-import statsmodels
+# import sys
+# import os
+# import datetime
+# import timeit
+# import scipy
+# import tables
+# import matplotlib as mpl
+# import csv
+# import lxml
+# import urllib
+# import statsmodels
 # import math
 # import pylab as pl
 # import seaborn as sns
@@ -100,7 +100,10 @@ def condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_c
                          tiempo_caida_1, ordenes_lanzadas, tipo, trigger, freq_exec, ordenes, last_buy):
     ciclos_1 = int(freq_exec * tiempo_caida_1)
     media_prev = ordenes[-10-ciclos_1:-ciclos_1]
-    media_prev = np.mean([x['asks'][0][0] for x in media_prev])
+    try:
+        media_prev = np.mean([x['asks'][0][0] for x in media_prev])
+    except:
+        media_prev = ordenes[-ciclos_1]['asks'][0][0]
     if (tipo == 'buy') & (trigger) & (ordenes_lanzadas == []) & \
             (precio_venta_bidask < media_prev * (1 - porcentaje_caida_1)):
         condicion = True
@@ -365,5 +368,5 @@ def assign_serial(id_number, serial_dicc, seriales):
         valor = 0
     return valor
 
-def imprime(cadena):
-    return print(cadena)
+# def imprime(cadena):
+#     return print(cadena)

@@ -14,22 +14,22 @@ import os
 import time
 import requests as rq
 import math
-import datetime
-import pandas as pd
-import numpy as np
-import json
-import matplotlib.pyplot as plt
-import timeit
-import signal
-import threading
-import keyboard
-import pymongo
-import dateutil.parser
-import hmac, hashlib, base64
-from requests.auth import AuthBase
-import datetime as dt
-from scipy import stats
-import tqdm
+# import datetime
+# import pandas as pd
+# import numpy as np
+# import json
+# import matplotlib.pyplot as plt
+# import timeit
+# import signal
+# import threading
+# import keyboard
+# import pymongo
+# import dateutil.parser
+# import hmac, hashlib, base64
+# from requests.auth import AuthBase
+# import datetime as dt
+# from scipy import stats
+# import tqdm
 
 sys.stdout.flush() #Para cambiar el comportamiento de los print -- sin esta línea los escribe del tirón...
 
