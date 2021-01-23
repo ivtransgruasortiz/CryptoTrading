@@ -15,6 +15,7 @@ import time
 import requests as rq
 import math
 import pymongo
+import dns
 # import datetime
 # import pandas as pd
 # import numpy as np
