@@ -14,6 +14,7 @@ import os
 import time
 import requests as rq
 import math
+import pymongo
 # import datetime
 # import pandas as pd
 # import numpy as np
@@ -63,33 +64,25 @@ print(sys.platform + ' System')
 print('#####################################')
 print('\n### Importing Libraries... ###')
 
-# ############################################################################################################################################################################
-# # Authentication into MongoDB_Atlas
-# ############################################################################################################################################################################
-# ### Conexion a la bbdd
-# #
-# client = pymongo.MongoClient(
-#     "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority"
-#     % (doc['Credentials'][3], doc['Credentials'][4], doc['Credentials'][5]))
-# db = client.get_database(doc['Credentials'][5])
-#
-# # #lectura
-# # records = db.premios_records
-# # results = list(records.find({}, {"_id": 0}))  # Asi omitimos el _id que por defecto nos agrega mongo
-# # df_results = pd.DataFrame.from_dict(results)
-#
-# # #escritura
-# # records = db.premios_records
-# # records.remove()
-# # records.insert(df_json)
-# ############################################################################################################################################################################
-
 # ### AUTHENTICATION INTO COINBASE ###
-print('\n### Authenticating... ###')
+print('\n### Authenticating into CoinbasePro... ###')
 try:
     auth = CoinbaseExchangeAuth(doc['Credentials'][0], doc['Credentials'][1], doc['Credentials'][2])
 except:
     auth = CoinbaseExchangeAuth(sys.argv[1], sys.argv[2], sys.argv[3])
+
+# ### AUTHENTICATION INTO MongoDB-Atlas ###
+print('\n### Authenticating into MongoDB-Atlas... ###')
+try:
+    client = pymongo.MongoClient(
+        "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority"
+        % (doc['Credentials'][3], doc['Credentials'][4], doc['Credentials'][5]))
+    db = client.get_database(doc['Credentials'][5])
+except:
+    client = pymongo.MongoClient(
+        "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority"
+        % (sys.argv[4], sys.argv[5], sys.argv[6]))
+    db = client.get_database(sys.argv[6])
 
 ### GET ACCOUNTS ###
 crypto = "LTC-EUR"
@@ -121,13 +114,23 @@ freq_exec = 0.5
 t00 = time.perf_counter()
 contador_ciclos = 0
 tamanio_listas_min = freq_exec * tiempo_caida_1
-lista_last_buy = [9999999]
-lista_last_sell = [9999999]
 ordenes_lanzadas = []
-trigger = True
-historico = True
 # size_order_bidask = 0.1 ## Para LIMIT
 
+### Lectura BBDD-Last_Buy ###
+records = db.ultima_compra_records
+lista_last_buy = list(records.find({}, {"_id": 0}))  # Asi omitimos el _id que por defecto nos agrega mongo
+if lista_last_buy == []:
+    lista_last_buy = [9999999]
+    lista_last_sell = [9999999]
+    trigger = True
+else:
+    lista_last_buy = lista_last_buy[-1]['last_buy']
+    lista_last_sell = [9999999]
+    trigger = False
+
+### Historico ###
+historico = True
 if historico:
     cifra_origen = 100
     pag_historic = 100
@@ -138,8 +141,9 @@ if historico:
 else:
     ordenes = []
 
-
+### Inicializacion ###
 time.sleep(1)
+
 while True:
     try:
         t0 = time.perf_counter()
@@ -184,6 +188,11 @@ while True:
             lista_last_buy.append(precio_venta_bidask)
             trigger = False
             print('COMPRA!!!')
+            ### BBDD
+            records = db.ultima_compra_records
+            records.remove()
+            records.insert_one({'last_buy': precio_venta_bidask})
+
             # #new fills no por ahora...
             # account = rq.get(api_url + 'fills?product_id=' + crypto, auth=auth)
             # account.json()
@@ -219,6 +228,9 @@ while True:
             lista_last_sell.append(precio_compra_bidask)
             trigger = False ## cambiar a 1 cuando metamos las condiciones
             print('VENTA!!!')
+            ### BBDD
+            records = db.ultima_compra_records
+            records.remove()
 
         ### CALCULO PAUSAS ###
         contador_ciclos += 1  ## para poder comparar hacia atrśs freq*time_required = num_ciclos hacia atras
