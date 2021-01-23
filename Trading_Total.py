@@ -138,6 +138,8 @@ if historico:
 else:
     ordenes = []
 
+
+time.sleep(1)
 while True:
     try:
         t0 = time.perf_counter()
@@ -198,7 +200,6 @@ while True:
             except:
                 pass
         except:
-            time.sleep(0.1)
             pass
 
         ### VENTAS ###
