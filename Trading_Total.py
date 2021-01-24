@@ -112,7 +112,6 @@ porcentaje_caida_1 = 0.05
 porcentaje_beneficio_1 = 0.02
 tiempo_caida_1 = 60 * 60
 freq_exec = 0.5
-t00 = time.perf_counter()
 contador_ciclos = 0
 tamanio_listas_min = freq_exec * tiempo_caida_1
 ordenes_lanzadas = []
@@ -144,6 +143,7 @@ else:
 
 ### Inicializacion ###
 time.sleep(1)
+t00 = time.perf_counter()
 
 while True:
     try:
@@ -161,77 +161,72 @@ while True:
             pass
 
         ### Limitacion tamaño lista ###
-        if len(ordenes) > tamanio_listas_min:
+        factor_tamanio = 100
+        if len(ordenes) > tamanio_listas_min * factor_tamanio:
             ordenes.pop(0)
 
         ### FONDOS_DISPONIBLES ##
-        account = rq.get(api_url + 'accounts', auth=auth)
-        account = account.json()
-        disp_ini = {}
-        for item in account:
-            disp_ini.update({item['currency']: float(item['available'])})
-        eur = math.trunc(disp_ini['EUR']*100)/100
-        crypto_quantity = math.trunc(disp_ini[crypto_short]*100)/100
-
-        # ### Tamanio ordenes para LIMIT###
-        # size_order_bidask = math.trunc((eur*(1-fees)/precio_venta_bidask)*100)/100
-
-        # ### Condiciones para compra-venta ###
-        # condiciones_compra = False #trigger_compra_venta(disponibilidad_fondos y on_off_compra_venta), tamaño_listas, condicionales_precios
-        # condiciones_venta = False #trigger_compra_venta, condicionales_para_venta(velocidad_subida estancada y margen_beneficios)
-
-        ### COMPRAS ###
-        if condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
-                                tiempo_caida_1, ordenes_lanzadas, 'buy', trigger, freq_exec, ordenes,
-                                lista_last_buy)[0]:
-            # buy_sell('buy', crypto, 'limit', api_url, auth, size_order_bidask, precio_venta_bidask) ## LIMIT
-            buy_sell('buy', crypto, 'market', api_url, auth, eur) ## MARKET
-            lista_last_buy.append(precio_venta_bidask)
-            trigger = False
-            print('COMPRA!!!')
-            ### BBDD
-            records = db.ultima_compra_records
-            records.remove()
-            records.insert_one({'last_buy': precio_venta_bidask})
-
-            # #new fills no por ahora...
-            # account = rq.get(api_url + 'fills?product_id=' + crypto, auth=auth)
-            # account.json()
-            # #fin new
-            ### Tamanio ordenes ###
-            # last_size_order_bidask = size_order_bidask
-
-        ### ORDENES_LANZADAS ###
         try:
-            # r = rq.get(api_url + 'products/' + crypto + '/trades?before=1&limit=2', auth=auth)
-            ordenes_lanzadas = rq.get(api_url + 'orders', auth=auth)
-            try:
-                ordenes_lanzadas = ordenes_lanzadas.json()
-            except:
-                pass
-        except:
-            pass
-
-        ### VENTAS ###
-        if condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
-                                tiempo_caida_1, ordenes_lanzadas, 'sell', trigger, freq_exec, ordenes,
-                                lista_last_buy)[0]:
-            ### FONDOS_DISPONIBLES ###
             account = rq.get(api_url + 'accounts', auth=auth)
             account = account.json()
             disp_ini = {}
             for item in account:
                 disp_ini.update({item['currency']: float(item['available'])})
-            funds_disp = math.trunc(disp_ini[crypto_short] * precio_compra_bidask * 100) / 100
+            eur = math.trunc(disp_ini['EUR']*100)/100
+            crypto_quantity = math.trunc(disp_ini[crypto_short]*100)/100
+        except:
+            pass
 
-            # buy_sell('sell', crypto, 'limit', api_url, auth, last_size_order_bidask, precio_compra_bidask) ## LIMIT
-            buy_sell('sell', crypto, 'market', api_url, auth, funds_disp) ## MARKET
-            lista_last_sell.append(precio_compra_bidask)
-            trigger = False ## cambiar a 1 cuando metamos las condiciones
-            print('VENTA!!!')
-            ### BBDD
-            records = db.ultima_compra_records
-            records.remove()
+        ### COMPRAS ###
+        if condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
+                                tiempo_caida_1, ordenes_lanzadas, 'buy', trigger, freq_exec, ordenes,
+                                lista_last_buy)[0]:
+            ### Orden de Compra ###
+            try:
+                # buy_sell('buy', crypto, 'limit', api_url, auth, size_order_bidask, precio_venta_bidask) ## LIMIT
+                buy_sell('buy', crypto, 'market', api_url, auth, eur) ## MARKET
+                lista_last_buy.append(precio_venta_bidask)
+                trigger = False
+                print('COMPRA!!!')
+                ### BBDD
+                records = db.ultima_compra_records
+                records.remove()
+                records.insert_one({'last_buy': precio_venta_bidask})
+            except:
+                pass
+        ### ORDENES_LANZADAS ###
+        try:
+            # r = rq.get(api_url + 'products/' + crypto + '/trades?before=1&limit=2', auth=auth)
+            ordenes_lanzadas = rq.get(api_url + 'orders', auth=auth)
+            ordenes_lanzadas = ordenes_lanzadas.json()
+        except:
+            pass
+        ### VENTAS ###
+        if condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
+                                tiempo_caida_1, ordenes_lanzadas, 'sell', trigger, freq_exec, ordenes,
+                                lista_last_buy)[0]:
+            ### FONDOS_DISPONIBLES ###
+            try:
+                account = rq.get(api_url + 'accounts', auth=auth)
+                account = account.json()
+            except:
+                pass
+            disp_ini = {}
+            for item in account:
+                disp_ini.update({item['currency']: float(item['available'])})
+            funds_disp = math.trunc(disp_ini[crypto_short] * precio_compra_bidask * 100) / 100
+            ### Orden de Venta ###
+            try:
+                # buy_sell('sell', crypto, 'limit', api_url, auth, last_size_order_bidask, precio_compra_bidask) ## LIMIT
+                buy_sell('sell', crypto, 'market', api_url, auth, funds_disp) ## MARKET
+                lista_last_sell.append(precio_compra_bidask)
+                trigger = False ## cambiar a 1 cuando metamos las condiciones
+                print('VENTA!!!')
+                ### BBDD
+                records = db.ultima_compra_records
+                records.remove()
+            except:
+                pass
 
         ### CALCULO PAUSAS ###
         contador_ciclos += 1  ## para poder comparar hacia atrśs freq*time_required = num_ciclos hacia atras
@@ -248,7 +243,23 @@ while True:
                                        porcentaje_beneficio_1,
                                        tiempo_caida_1, ordenes_lanzadas, 'sell', trigger, freq_exec, ordenes,
                                        lista_last_buy)[0])
-
     except (KeyboardInterrupt, SystemExit):  # ctrl + c
         print('All done')
         break
+### FIN ###
+
+### LISTA OPCIONAL ###
+#
+# #new fills no por ahora...
+# account = rq.get(api_url + 'fills?product_id=' + crypto, auth=auth)
+# account.json()
+# #fin new
+### Tamanio ordenes ###
+# last_size_order_bidask = size_order_bidask
+
+# ### Tamanio ordenes para LIMIT###
+# size_order_bidask = math.trunc((eur*(1-fees)/precio_venta_bidask)*100)/100
+
+# ### Condiciones para compra-venta ###
+# condiciones_compra = False #trigger_compra_venta(disponibilidad_fondos y on_off_compra_venta), tamaño_listas, condicionales_precios
+# condiciones_venta = False #trigger_compra_venta, condicionales_para_venta(velocidad_subida estancada y margen_beneficios)

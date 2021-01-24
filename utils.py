@@ -99,7 +99,8 @@ def tiempo_pausa_new(exec_time, freq):
 def condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
                          tiempo_caida_1, ordenes_lanzadas, tipo, trigger, freq_exec, ordenes, last_buy):
     ciclos_1 = int(freq_exec * tiempo_caida_1)
-    media_prev = ordenes[-10-ciclos_1:-ciclos_1]
+    ciclos_media = 10
+    media_prev = ordenes[-ciclos_media-ciclos_1:-ciclos_1]
     try:
         media_prev = np.mean([x['asks'][0][0] for x in media_prev])
     except:
