@@ -220,7 +220,7 @@ while True:
                 # buy_sell('sell', crypto, 'limit', api_url, auth, last_size_order_bidask, precio_compra_bidask) ## LIMIT
                 buy_sell('sell', crypto, 'market', api_url, auth, funds_disp) ## MARKET
                 lista_last_sell.append(precio_compra_bidask)
-                trigger = False ## cambiar a 1 cuando metamos las condiciones
+                trigger = True
                 print('VENTA!!!')
                 ### BBDD
                 records = db.ultima_compra_records
