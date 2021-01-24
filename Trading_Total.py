@@ -149,8 +149,6 @@ fechas = [dateutil.parser.parse(x) for x in hist_df['time']]
 ### PINTAR GRAFICAS ###
 pintar_grafica(df_medias_bids_asks(asks, crypto, fechas, 60, 360), crypto)
 
-
-####### FIN ###
 ### Inicializacion ###
 time.sleep(1)
 t00 = time.perf_counter()
