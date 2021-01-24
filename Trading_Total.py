@@ -15,18 +15,18 @@ import time
 import requests as rq
 import math
 import pymongo
+import dateutil.parser
 import dns
 # import datetime
-# import pandas as pd
+import pandas as pd
 # import numpy as np
 # import json
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 # import timeit
 # import signal
 # import threading
 # import keyboard
 # import pymongo
-# import dateutil.parser
 # import hmac, hashlib, base64
 # from requests.auth import AuthBase
 # import datetime as dt
@@ -50,7 +50,8 @@ else:
     system = sys.platform
 
 from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial, tiempo_pausa_new, historic_df, \
-    CoinbaseExchangeAuth, buy_sell, pinta_historico, condiciones_buy_sell
+    CoinbaseExchangeAuth, buy_sell, pinta_historico, condiciones_buy_sell, medias_exp, df_medias_bids_asks, \
+    pintar_grafica
 import yaml
 
 ## Importar datos-configuraciones-funciones
@@ -136,11 +137,20 @@ if historico:
     pag_historic = 100
     hist_df = historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, version='old',
                           hist_new=True)  # OLD representa mejor
-    # pinta_historico(hist_df, crypto)
     ordenes = hist_df[['bids', 'asks', 'sequence']].to_dict(orient='records')
 else:
     ordenes = []
 
+### MEDIAS EXP HISTORICAS ###
+bids = [x[0][0] for x in list(hist_df['bids'].values)]
+asks = [x[0][0] for x in list(hist_df['asks'].values)]
+fechas = [dateutil.parser.parse(x) for x in hist_df['time']]
+
+### PINTAR GRAFICAS ###
+pintar_grafica(df_medias_bids_asks(asks, crypto, fechas, 60, 360), crypto)
+
+
+####### FIN ###
 ### Inicializacion ###
 time.sleep(1)
 t00 = time.perf_counter()

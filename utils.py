@@ -248,8 +248,81 @@ def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, versi
         hist_df = df_new.sort_values('time')
     return hist_df
 
-##### old #####
-#
+def sma(n, datos):
+    if (len(datos) > n):
+        media = sum(datos[-n:]) / n
+        return media
+    else:
+        return datos[0]
+
+def ema(n, datos, alpha, media_ant):
+    if len(datos) > n:
+        expmedia = datos[-1] * alpha + (1 - alpha) * media_ant[-1]
+        return expmedia
+    else:
+        return datos[0]
+
+def medias_exp(bids_asks, n_rapida=60, n_lenta=360):
+    '''
+    :param bids_asks: lista de valores sobre los que calcular las medias exponenciales
+    :param n_rapida: periodo de calculo media rapida-nerviosa
+    :param n_lenta: periodo de calculo media lenta-tendencia
+    :return: lista de listas de valores correspondientes a las medias rapida y lenta
+    '''
+    mediavar_rapida = []
+    mediavar_lenta = []
+    expmediavar_rapida = []
+    expmediavar_lenta = []
+    n_rapida = 60
+    n_lenta = 360
+    for i in range(len(bids_asks)):
+        mediavar_rapida.append(sma(n_rapida, bids_asks[:i+1]))
+        mediavar_lenta.append(sma(n_lenta, bids_asks[:i+1]))
+        if len(expmediavar_rapida) <= n_rapida+1:
+            expmediavar_rapida.append(mediavar_rapida[-1])
+        else:
+            expmediavar_rapida.append(ema(n_rapida, bids_asks[:i+1], 2.0/(n_rapida+1), expmediavar_rapida))
+
+        if len(expmediavar_lenta) <= n_lenta+1:
+            expmediavar_lenta.append(mediavar_lenta[-1])
+        else:
+            expmediavar_lenta.append(ema(n_lenta, bids_asks[:i+1], 2.0/(n_lenta+1), expmediavar_lenta))
+    return[expmediavar_rapida, expmediavar_lenta]
+
+def df_medias_bids_asks(bids_asks, crypto, fechas, n_rapida=60, n_lenta=360):
+    '''
+    :param bids_asks: lista para formar el dataframe
+    :param crypto: moneda
+    :param fechas: lista fechas
+    :param n_rapida: parametros medias para calculos medias exponenciales
+    :param n_lenta: parametros medias para calculos medias exponenciales
+    :return:
+    '''
+    df_bids_asks = pd.DataFrame(fechas)
+    df_bids_asks['expmedia_rapida'] = medias_exp(bids_asks, n_rapida, n_lenta)[0]
+    df_bids_asks['expmedia_lenta'] = medias_exp(bids_asks, n_rapida, n_lenta)[1]
+    df_bids_asks[crypto] = bids_asks
+    df_bids_asks['time'] = fechas
+    return df_bids_asks
+
+def pintar_grafica(df, crypto):
+    '''
+    :param df: dataframe a pintar con columnas (fecha, valores1, valores2)
+    :param crypto: Moneda
+    :return: grafica
+    '''
+    fig2 = plt.figure(2)
+    ax2 = fig2.add_subplot(111)
+    plt.plot(df['time'].values, df[crypto], label=crypto)
+    ax2.plot(df['time'].values, df['expmedia_rapida'], label='expmedia_rapida')
+    ax2.plot(df['time'].values, df['expmedia_lenta'], label='expmedia_lenta')
+    ax2.legend()
+    plt.xticks(rotation='45')
+    plt.show()
+
+#################3
+##### OLD #####
+#################3
 def pinta_historico(hist_df, crypto):
     ## PERCENTILES
     #
@@ -302,20 +375,6 @@ def pinta_historico(hist_df, crypto):
     ax2.legend()
     plt.xticks(rotation='45')
     plt.show()
-
-def sma(n, datos):
-    if (len(datos) > n):
-        media = sum(datos[-n:]) / n
-        return media
-    else:
-        return datos[0]
-
-def ema(n, datos, alpha, media_ant):
-    if len(datos) > n:
-        expmedia = datos[-1] * alpha + (1 - alpha) * media_ant[-1]
-        return expmedia
-    else:
-        return datos[0]
 
 def lag(n, df):
     for i in range(n):
