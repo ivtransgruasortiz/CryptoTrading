@@ -21,6 +21,7 @@ import datetime as dt
 from scipy import stats
 import tqdm
 import dateutil.parser
+from statistics import mean
 # import sys
 # import os
 # import datetime
@@ -102,11 +103,11 @@ def condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_c
     ciclos_media = 10
     media_prev = ordenes[-ciclos_media-ciclos_1:-ciclos_1]
     try:
-        media_prev = np.mean([x['asks'][0][0] for x in media_prev])
+        media_prev_float = mean([float(x['asks'][0][0]) for x in media_prev])
     except:
-        media_prev = ordenes[-ciclos_1]['asks'][0][0]
+        media_prev_float = round(float(ordenes[-ciclos_1]['asks'][0][0]), 2)
     if (tipo == 'buy') & (trigger) & (ordenes_lanzadas == []) & \
-            (precio_venta_bidask < media_prev * (1 - porcentaje_caida_1)):
+            (precio_venta_bidask < float(media_prev_float) * (1 - porcentaje_caida_1)):
         condicion = True
         precio = precio_venta_bidask
         print('buy')
