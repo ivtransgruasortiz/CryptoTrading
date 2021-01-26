@@ -22,6 +22,7 @@ from scipy import stats
 import tqdm
 import dateutil.parser
 from statistics import mean
+import math
 # import sys
 # import os
 # import datetime
@@ -98,7 +99,8 @@ def tiempo_pausa_new(exec_time, freq):
     return pausa
 
 def condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
-                         tiempo_caida_1, ordenes_lanzadas, tipo, trigger, freq_exec, ordenes, last_buy):
+                         tiempo_caida_1, ordenes_lanzadas, tipo, trigger, freq_exec, ordenes, last_buy,
+                         medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks):
     ciclos_1 = int(freq_exec * tiempo_caida_1)
     ciclos_media = 10
     media_prev = ordenes[-ciclos_media-ciclos_1:-ciclos_1]
@@ -106,12 +108,14 @@ def condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_c
         media_prev_float = mean([float(x['asks'][0][0]) for x in media_prev])
     except:
         media_prev_float = round(float(ordenes[-ciclos_1]['asks'][0][0]), 2)
-    if (tipo == 'buy') & (trigger) & (ordenes_lanzadas == []) & \
+    condicion_media_compra = medias_exp_rapida_asks[-1] > medias_exp_lenta_asks[-1]
+    condicion_media_venta = medias_exp_rapida_bids[-1] < medias_exp_lenta_bids[-1]
+    if (tipo == 'buy') & (trigger) & (ordenes_lanzadas == []) & condicion_media_compra & \
             (precio_venta_bidask < float(media_prev_float) * (1 - porcentaje_caida_1)):
         condicion = True
         precio = precio_venta_bidask
         print('buy')
-    elif (tipo == 'sell') & (not trigger) & (ordenes_lanzadas == []) & \
+    elif (tipo == 'sell') & (not trigger) & (ordenes_lanzadas == []) & condicion_media_venta & \
             (precio_compra_bidask > last_buy[-1] * (1 + porcentaje_beneficio_1)):
         condicion = True
         precio = precio_compra_bidask
@@ -252,16 +256,16 @@ def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, versi
 def sma(n, datos):
     if (len(datos) > n):
         media = sum(datos[-n:]) / n
-        return media
+        return round(media, 5)
     else:
-        return datos[0]
+        return round(datos[0], 5)
 
 def ema(n, datos, alpha, media_ant):
     if len(datos) > n:
         expmedia = datos[-1] * alpha + (1 - alpha) * media_ant[-1]
-        return expmedia
+        return round(expmedia, 5)
     else:
-        return datos[0]
+        return round(datos[0], 5)
 
 def medias_exp(bids_asks, n_rapida=60, n_lenta=360):
     '''
@@ -274,8 +278,6 @@ def medias_exp(bids_asks, n_rapida=60, n_lenta=360):
     mediavar_lenta = []
     expmediavar_rapida = []
     expmediavar_lenta = []
-    n_rapida = 60
-    n_lenta = 360
     for i in range(len(bids_asks)):
         mediavar_rapida.append(sma(n_rapida, bids_asks[:i+1]))
         mediavar_lenta.append(sma(n_lenta, bids_asks[:i+1]))
@@ -305,6 +307,12 @@ def df_medias_bids_asks(bids_asks, crypto, fechas, n_rapida=60, n_lenta=360):
     df_bids_asks[crypto] = bids_asks
     df_bids_asks['time'] = fechas
     return df_bids_asks
+
+
+def limite_tamanio(tamanio_listas_min, factor_tamanio, lista_a_limitar):
+    if len(lista_a_limitar) > tamanio_listas_min * factor_tamanio:
+        lista_a_limitar.pop(0)
+    return lista_a_limitar
 
 def pintar_grafica(df, crypto):
     '''

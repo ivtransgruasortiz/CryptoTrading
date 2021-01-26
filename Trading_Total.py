@@ -51,7 +51,7 @@ else:
 
 from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial, tiempo_pausa_new, historic_df, \
     CoinbaseExchangeAuth, buy_sell, pinta_historico, condiciones_buy_sell, medias_exp, df_medias_bids_asks, \
-    pintar_grafica
+    pintar_grafica, limite_tamanio
 import yaml
 
 ## Importar datos-configuraciones-funciones
@@ -111,10 +111,11 @@ print('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) to
 ### INITIAL RESET FOR VARIABLES ###
 porcentaje_caida_1 = 0.05
 porcentaje_beneficio_1 = 0.02
-tiempo_caida_1 = 60 * 60
+tiempo_caida_1 = 180 * 60  # en segundos... (180 minutos)
 freq_exec = 0.5
 contador_ciclos = 0
 tamanio_listas_min = freq_exec * tiempo_caida_1
+factor_tamanio = 100
 ordenes_lanzadas = []
 # size_order_bidask = 0.1 ## Para LIMIT
 
@@ -146,10 +147,19 @@ bids = [x[0][0] for x in list(hist_df['bids'].values)]
 asks = [x[0][0] for x in list(hist_df['asks'].values)]
 fechas = [dateutil.parser.parse(x) for x in hist_df['time']]
 
-### PINTAR GRAFICAS ###
-pintar_grafica(df_medias_bids_asks(asks, crypto, fechas, 60, 360), crypto)
+# ### PINTAR GRAFICAS ###
+# pintar_grafica(df_medias_bids_asks(asks, crypto, fechas, 60, 360), crypto)
 
-### Inicializacion ###
+### Inicializacion y medias_exp ###
+n_rapida_bids = 120
+n_lenta_bids = 420
+n_rapida_asks = 60
+n_lenta_asks = 360
+medias_exp_rapida_bids = [medias_exp(bids, n_rapida_bids, n_lenta_bids)[0][-1]]
+medias_exp_lenta_bids = [medias_exp(bids, n_rapida_bids, n_lenta_bids)[1][-1]]
+medias_exp_rapida_asks = [medias_exp(asks, n_rapida_asks, n_lenta_asks)[0][-1]]
+medias_exp_lenta_asks = [medias_exp(asks, n_rapida_asks, n_lenta_asks)[1][-1]]
+
 time.sleep(1)
 t00 = time.perf_counter()
 
@@ -157,7 +167,6 @@ while True:
     try:
         t0 = time.perf_counter()
         tiempo_transcurrido = time.perf_counter() - t00
-
         ### BidAsk ###
         try:
             bidask = rq.get(api_url + 'products/' + crypto + '/book?level=1')
@@ -167,12 +176,20 @@ while True:
             precio_venta_bidask = float(ordenes[-1]['asks'][0][0])
         except:
             pass
-
+        ### Actualizacion listas precios y medias_exp ###
+        bids.append(precio_compra_bidask)
+        asks.append(precio_venta_bidask)
+        medias_exp_rapida_bids.append(ema(n_rapida_bids, bids, 2.0 / (n_rapida_bids + 1), medias_exp_rapida_bids))
+        medias_exp_lenta_bids.append(ema(n_lenta_bids, bids, 2.0 / (n_lenta_bids + 1), medias_exp_lenta_bids))
+        medias_exp_rapida_asks.append(ema(n_rapida_asks, asks, 2.0 / (n_rapida_asks + 1), medias_exp_rapida_asks))
+        medias_exp_lenta_asks.append(ema(n_lenta_asks, asks, 2.0 / (n_lenta_asks + 1), medias_exp_lenta_asks))
         ### Limitacion tamaño lista ###
-        factor_tamanio = 100
-        if len(ordenes) > tamanio_listas_min * factor_tamanio:
-            ordenes.pop(0)
-
+        bids = limite_tamanio(tamanio_listas_min, factor_tamanio, bids)
+        asks = limite_tamanio(tamanio_listas_min, factor_tamanio, asks)
+        medias_exp_rapida_bids = limite_tamanio(tamanio_listas_min, factor_tamanio, medias_exp_rapida_bids)
+        medias_exp_lenta_bids = limite_tamanio(tamanio_listas_min, factor_tamanio, medias_exp_lenta_bids)
+        medias_exp_rapida_asks = limite_tamanio(tamanio_listas_min, factor_tamanio, medias_exp_rapida_asks)
+        medias_exp_lenta_asks = limite_tamanio(tamanio_listas_min, factor_tamanio, medias_exp_lenta_asks)
         ### FONDOS_DISPONIBLES ##
         try:
             account = rq.get(api_url + 'accounts', auth=auth)
@@ -184,11 +201,11 @@ while True:
             crypto_quantity = math.trunc(disp_ini[crypto_short]*100)/100
         except:
             pass
-
         ### COMPRAS ###
         if condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
                                 tiempo_caida_1, ordenes_lanzadas, 'buy', trigger, freq_exec, ordenes,
-                                lista_last_buy)[0]:
+                                lista_last_buy, medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks,
+                                medias_exp_lenta_asks)[0]:
             ### Orden de Compra ###
             try:
                 # buy_sell('buy', crypto, 'limit', api_url, auth, size_order_bidask, precio_venta_bidask) ## LIMIT
@@ -212,7 +229,8 @@ while True:
         ### VENTAS ###
         if condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
                                 tiempo_caida_1, ordenes_lanzadas, 'sell', trigger, freq_exec, ordenes,
-                                lista_last_buy)[0]:
+                                lista_last_buy, medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks,
+                                medias_exp_lenta_asks)[0]:
             ### FONDOS_DISPONIBLES ###
             try:
                 account = rq.get(api_url + 'accounts', auth=auth)
@@ -256,7 +274,10 @@ while True:
         break
 ### FIN ###
 
-### LISTA OPCIONAL ###
+# ### LISTA OPCIONAL ###
+# expmediavar_rapida_bidask.append(ema(n_rapida_bidask,precio_bidask, 2.0/(n_rapida_bidask+1), expmediavar_rapida_bidask))
+# expmediavar_lenta_bidask.append(ema(n_lenta_bidask,precio_bidask, 2.0/(n_lenta_bidask+1), expmediavar_lenta_bidask))
+
 #
 # #new fills no por ahora...
 # account = rq.get(api_url + 'fills?product_id=' + crypto, auth=auth)
