@@ -262,13 +262,14 @@ while True:
             print(contador_ciclos)
             print(precio_compra_bidask)
             print(precio_venta_bidask)
-            print(condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
-                                tiempo_caida_1, ordenes_lanzadas, 'buy', trigger, freq_exec, ordenes,
-                                lista_last_buy)[0])
             print(condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1,
-                                       porcentaje_beneficio_1,
-                                       tiempo_caida_1, ordenes_lanzadas, 'sell', trigger, freq_exec, ordenes,
-                                       lista_last_buy)[0])
+                                       porcentaje_beneficio_1, tiempo_caida_1, ordenes_lanzadas, 'buy', trigger,
+                                       freq_exec, ordenes, lista_last_buy, medias_exp_rapida_bids,
+                                       medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks)[0])
+            print(condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1,
+                                       porcentaje_beneficio_1, tiempo_caida_1, ordenes_lanzadas, 'sell', trigger,
+                                       freq_exec, ordenes, lista_last_buy, medias_exp_rapida_bids,
+                                       medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks)[0])
     except (KeyboardInterrupt, SystemExit):  # ctrl + c
         print('All done')
         break
