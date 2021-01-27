@@ -111,7 +111,7 @@ print('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) to
 ### INITIAL RESET FOR VARIABLES ###
 porcentaje_caida_1 = 0.05
 porcentaje_beneficio_1 = 0.02
-tiempo_caida_1 = 180 * 60  # en segundos... (180 minutos)
+tiempo_caida_1 = 120 * 60  # en segundos... (180 minutos)
 freq_exec = 0.5
 contador_ciclos = 0
 tamanio_listas_min = freq_exec * tiempo_caida_1
@@ -135,7 +135,7 @@ else:
 historico = True
 if historico:
     cifra_origen = 100
-    pag_historic = 100
+    pag_historic = 200
     hist_df = historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, version='old',
                           hist_new=True)  # OLD representa mejor
     ordenes = hist_df[['bids', 'asks', 'sequence']].to_dict(orient='records')
@@ -160,7 +160,7 @@ medias_exp_lenta_bids = [medias_exp(bids, n_rapida_bids, n_lenta_bids)[1][-1]]
 medias_exp_rapida_asks = [medias_exp(asks, n_rapida_asks, n_lenta_asks)[0][-1]]
 medias_exp_lenta_asks = [medias_exp(asks, n_rapida_asks, n_lenta_asks)[1][-1]]
 
-time.sleep(1)
+time.sleep(5)
 t00 = time.perf_counter()
 
 while True:
