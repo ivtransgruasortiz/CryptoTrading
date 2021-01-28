@@ -12,6 +12,7 @@ Created on Thu Jul  6 19:22:32 2017
 import pandas as pd
 import numpy as np
 import time
+import datetime
 import json
 import matplotlib.pyplot as plt
 import requests as rq
@@ -100,10 +101,18 @@ def tiempo_pausa_new(exec_time, freq):
 
 def condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
                          tiempo_caida_1, ordenes_lanzadas, tipo, trigger, freq_exec, ordenes, last_buy,
-                         medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks):
+                         medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks,
+                         indicador_tiempo_de_gracia, hist_df):
     ciclos_1 = int(freq_exec * tiempo_caida_1)
     ciclos_media = 10
-    media_prev = ordenes[-ciclos_media-ciclos_1:-ciclos_1]
+    if indicador_tiempo_de_gracia:
+        dif_ahora = datetime.datetime.now() - datetime.timedelta(seconds=tiempo_caida_1)
+        media_prev = hist_df[pd.to_datetime(hist_df['time']).apply(lambda x: x.replace(tzinfo=None)) > dif_ahora]
+        media_prev = media_prev[['bids', 'asks', 'sequence']]
+        media_prev = media_prev.to_dict('records')
+        media_prev = media_prev[:10]
+    else:
+        media_prev = ordenes[-ciclos_media-ciclos_1:-ciclos_1]
     try:
         media_prev_float = mean([float(x['asks'][0][0]) for x in media_prev])
     except:

@@ -167,6 +167,10 @@ while True:
     try:
         t0 = time.perf_counter()
         tiempo_transcurrido = time.perf_counter() - t00
+        if tiempo_transcurrido < tiempo_caida_1:
+            indicador_tiempo_de_gracia = True
+        else:
+            indicador_tiempo_de_gracia = False
         ### BidAsk ###
         try:
             bidask = rq.get(api_url + 'products/' + crypto + '/book?level=1')
@@ -205,7 +209,7 @@ while True:
         if condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
                                 tiempo_caida_1, ordenes_lanzadas, 'buy', trigger, freq_exec, ordenes,
                                 lista_last_buy, medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks,
-                                medias_exp_lenta_asks)[0]:
+                                medias_exp_lenta_asks, indicador_tiempo_de_gracia, hist_df)[0]:
             ### Orden de Compra ###
             try:
                 # buy_sell('buy', crypto, 'limit', api_url, auth, size_order_bidask, precio_venta_bidask) ## LIMIT
@@ -232,7 +236,7 @@ while True:
         if condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
                                 tiempo_caida_1, ordenes_lanzadas, 'sell', trigger, freq_exec, ordenes,
                                 lista_last_buy, medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks,
-                                medias_exp_lenta_asks)[0]:
+                                medias_exp_lenta_asks, indicador_tiempo_de_gracia, hist_df)[0]:
             ### FONDOS_DISPONIBLES ###
             try:
                 account = rq.get(api_url + 'accounts', auth=auth)
@@ -267,11 +271,13 @@ while True:
             print(condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1,
                                        porcentaje_beneficio_1, tiempo_caida_1, ordenes_lanzadas, 'buy', trigger,
                                        freq_exec, ordenes, lista_last_buy, medias_exp_rapida_bids,
-                                       medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks)[0])
+                                       medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks,
+                                       indicador_tiempo_de_gracia, hist_df)[0])
             print(condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1,
                                        porcentaje_beneficio_1, tiempo_caida_1, ordenes_lanzadas, 'sell', trigger,
                                        freq_exec, ordenes, lista_last_buy, medias_exp_rapida_bids,
-                                       medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks)[0])
+                                       medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks,
+                                       indicador_tiempo_de_gracia, hist_df)[0])
     except (KeyboardInterrupt, SystemExit):  # ctrl + c
         print('All done')
         break
