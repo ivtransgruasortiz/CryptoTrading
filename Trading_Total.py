@@ -16,6 +16,8 @@ import requests as rq
 import math
 import pymongo
 import dateutil.parser
+import datetime
+from statistics import mean
 import dns
 # import datetime
 import pandas as pd
@@ -49,9 +51,9 @@ if sys.platform == 'win32':
 else:
     system = sys.platform
 
-from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial, tiempo_pausa_new, historic_df, \
+from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial, tiempo_pausa_new, \
     CoinbaseExchangeAuth, buy_sell, pinta_historico, condiciones_buy_sell, medias_exp, df_medias_bids_asks, \
-    pintar_grafica, limite_tamanio
+    pintar_grafica, limite_tamanio, historic_df
 import yaml
 
 ## Importar datos-configuraciones-funciones
@@ -134,10 +136,8 @@ else:
 ### Historico ###
 historico = True
 if historico:
-    cifra_origen = 100
-    pag_historic = 200
-    hist_df = historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, version='old',
-                          hist_new=True)  # OLD representa mejor
+    pag_historic = 20
+    hist_df = historic_df(crypto, api_url, auth, pag_historic)
     ordenes = hist_df[['bids', 'asks', 'sequence']].to_dict(orient='records')
 else:
     ordenes = []
@@ -213,10 +213,12 @@ while True:
                 lista_last_buy.append(precio_venta_bidask)
                 trigger = False
                 print('COMPRA!!!')
+                print(ordenes[-int(tiempo_caida_1*freq_exec)])
                 ### BBDD
                 records = db.ultima_compra_records
                 records.remove()
-                records.insert_one({'last_buy': precio_venta_bidask})
+                records.insert_one({'last_buy': precio_venta_bidask, 'fecha': datetime.datetime.now().isoformat(),
+                                    'precio_anterior': str(ordenes[-int(tiempo_caida_1*freq_exec)]['asks'])})
             except:
                 pass
         ### ORDENES_LANZADAS ###

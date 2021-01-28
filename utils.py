@@ -84,7 +84,7 @@ def tiempo_pausa(inicio, freq):
         pausa = 0
         print("la ejecución va ralentizada, hay que disminuir la frecuencia de ejecucion")
     print(pausa)
-    return (pausa)
+    return pausa
 
 def tiempo_pausa_new(exec_time, freq):
     """
@@ -169,88 +169,28 @@ def buy_sell(compra_venta, crypto, tipo, api_url, auth, sizefunds=None, precio=N
         pass
     return ordenes
 
-def historic_df(crypto, api_url, auth, system, cifra_origen, pag_historic, version='old', hist_new='False'):
-    ### INICIO tramo para datos anteriores ###
-    #
-    if version == 'old':
-        final1 = 0
-        comp = False
-        cont = 0
-        vect_hist = {}
-        b = []
-        df_new = pd.DataFrame()
-        print('### Gathering Data... ')
-        for i in tqdm.tqdm([100000000, 10000000, 1000000, 100000, 10000, 1000, 100]):
-            while not comp:
-                r = rq.get(api_url + 'products/' + crypto + '/trades?after=%s' % (cifra_origen + cont * i),
-                           auth=auth)  # va de 100 en 100
-                try:
-                    origen1 = [x['trade_id'] for x in r.json()]
-                except:
-                    continue
-                final = origen1[0]
-                comp = (final == final1)
-                coincide = cont - 1
-                final1 = final
-                cont += 1
-            cifra_origen = cifra_origen + (coincide - 1) * i
-            cont = 0
-            comp = False
-        if system == 'linux':
-            for i in tqdm.trange(pag_historic):  # 200  SON UNOS 12 DIAS APROX
-                r = rq.get(
-                    api_url + 'products/' + crypto + '/trades?after=%s' % (cifra_origen + coincide * 100 - i * 100),
-                    auth=auth)
-                try:
-                    a = [float(x['price']) for x in r.json()]
-                    new = [{'bids': [[float(x['price']), float(x['size']), 1]],
-                            'asks': [[float(x['price']), float(x['size']), 1]],
-                            'sequence': x['trade_id'],
-                            'time': x['time']} for x in r.json()]
-                    df_new_0 = pd.DataFrame.from_dict(new)
-                    df_new_0 = df_new_0.sort_values('time')
-                except:
-                    continue
-                for x in r.json():
-                    try:
-                        b.append(dt.datetime.strptime(x['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
-                    except:
-                        b.append(dt.datetime.strptime(x['time'], '%Y-%m-%dT%H:%M:%SZ'))
-                a.reverse()
-                b.reverse()
-                c = dict(zip(b, a))
-                vect_hist.update(c)
-                df_new = pd.concat([df_new, df_new_0])
-        if system == 'win32':
-            for i in range(pag_historic):
-                r = rq.get(
-                    api_url + 'products/' + crypto + '/trades?after=%s' % (cifra_origen + coincide * 100 - i * 100),
-                    auth=auth)
-                try:
-                    a = [float(x['price']) for x in r.json()]
-                except:
-                    continue
-                for x in r.json():
-                    try:
-                        b.append(dt.datetime.strptime(x['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
-                    except:
-                        b.append(dt.datetime.strptime(x['time'], '%Y-%m-%dT%H:%M:%SZ'))
-                a.reverse()
-                b.reverse()
-                c = dict(zip(b, a))
-                vect_hist.update(c)
-        hist_df = pd.DataFrame.from_dict(vect_hist, orient='index')
-        hist_df.columns = [crypto]
-        hist_df = hist_df.sort_index(axis=0)
-    else:
-        r = rq.get(api_url + 'products/' + crypto + '/trades?before=%s&limit=%s' % (pag_historic + 1, 100), auth=auth)
-        # hist_df = {dt.datetime.strptime(x['time'], '%Y-%m-%dT%H:%M:%S.%fZ'): float(x['price']) for x in r.json()}
-        hist_df = {dateutil.parser.parse(x['time']): float(x['price']) for x in r.json()}
-        hist_df = pd.DataFrame.from_dict(hist_df, orient='index')
-        hist_df.columns = [crypto]
-        hist_df = hist_df.sort_index(axis=0)
-    if hist_new:
-        hist_df = df_new.sort_values('time')
+def historic_df(crypto, api_url, auth, pag_historic):
+    vect_hist = {}
+    df_new = pd.DataFrame()
+    print('### Gathering Data... ')
+    r = rq.get(api_url + 'products/' + crypto + '/trades', auth=auth)
+    enlace = r.headers['Cb-After']
+    trades = [{'bids': [[float(x['price']), float(x['size']), 1]],
+                        'asks': [[float(x['price']), float(x['size']), 1]],
+                        'sequence': x['trade_id'],
+                        'time': x['time']} for x in r.json()]
+    for i in tqdm.trange(pag_historic):
+        r = rq.get(api_url + 'products/' + crypto + '/trades?after=%s' % enlace, auth=auth)
+        time.sleep(0.3)
+        enlace = r.headers['Cb-After']
+        valores = r.json()
+        # trades = trades + [float(x['price']) for x in r.json()]
+        trades += [{'bids': [[float(x['price']), float(x['size']), 1]],
+                'asks': [[float(x['price']), float(x['size']), 1]],
+                'sequence': x['trade_id'],
+                'time': x['time']} for x in r.json()]
+    df_new = pd.DataFrame.from_dict(trades)
+    hist_df = df_new.sort_values('time')
     return hist_df
 
 def sma(n, datos):
