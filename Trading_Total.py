@@ -129,14 +129,14 @@ if lista_last_buy == []:
     lista_last_sell = [9999999]
     trigger = True
 else:
-    lista_last_buy = lista_last_buy[-1]['last_buy']
+    lista_last_buy = [lista_last_buy[-1]['last_buy']]
     lista_last_sell = [9999999]
     trigger = False
 
 ### Historico ###
 historico = True
 if historico:
-    pag_historic = 20
+    pag_historic = 50
     hist_df = historic_df(crypto, api_url, auth, pag_historic)
     ordenes = hist_df[['bids', 'asks', 'sequence']].to_dict(orient='records')
 else:
