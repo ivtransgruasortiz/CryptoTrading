@@ -57,11 +57,11 @@ from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_s
 import yaml
 
 ## Importar datos-configuraciones-funciones
+with open('parameters.yaml', 'r') as parameters_file:
+    param = yaml.safe_load(parameters_file)
 try:
     with open('config.yaml', 'r') as config_file:
         cred = yaml.safe_load(config_file)
-    with open('parameters.yaml', 'r') as parameters_file:
-        param = yaml.safe_load(parameters_file)
 except:
     pass
 
