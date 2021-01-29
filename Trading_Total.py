@@ -59,7 +59,9 @@ import yaml
 ## Importar datos-configuraciones-funciones
 try:
     with open('config.yaml', 'r') as config_file:
-        doc = yaml.safe_load(config_file)
+        cred = yaml.safe_load(config_file)
+    with open('parameters.yaml', 'r') as config_file:
+        param = yaml.safe_load(config_file)
 except:
     pass
 
@@ -71,7 +73,7 @@ print('\n### Importing Libraries... ###')
 # ### AUTHENTICATION INTO COINBASE ###
 print('\n### Authenticating into CoinbasePro... ###')
 try:
-    auth = CoinbaseExchangeAuth(doc['Credentials'][0], doc['Credentials'][1], doc['Credentials'][2])
+    auth = CoinbaseExchangeAuth(cred['Credentials'][0], cred['Credentials'][1], cred['Credentials'][2])
 except:
     auth = CoinbaseExchangeAuth(sys.argv[1], sys.argv[2], sys.argv[3])
 
@@ -80,8 +82,8 @@ print('\n### Authenticating into MongoDB-Atlas... ###')
 try:
     client = pymongo.MongoClient(
         "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority"
-        % (doc['Credentials'][3], doc['Credentials'][4], doc['Credentials'][5]))
-    db = client.get_database(doc['Credentials'][5])
+        % (cred['Credentials'][3], cred['Credentials'][4], cred['Credentials'][5]))
+    db = client.get_database(cred['Credentials'][5])
 except:
     client = pymongo.MongoClient(
         "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority"
@@ -89,9 +91,9 @@ except:
     db = client.get_database(sys.argv[6])
 
 ### GET ACCOUNTS ###
-crypto = "LTC-EUR"
+crypto = param['crypto']
 crypto_short = crypto.split('-')[0]
-api_url = 'https://api.pro.coinbase.com/'
+api_url = param['api_url']
 
 ### Disp_iniciales ###
 account = rq.get(api_url + 'accounts', auth=auth)
@@ -111,13 +113,14 @@ print('\n### Data OK! ###')
 print('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) to cancel and view results')
 
 ### INITIAL RESET FOR VARIABLES ###
-porcentaje_caida_1 = 0.05
-porcentaje_beneficio_1 = 0.02
-tiempo_caida_1 = 120 * 60  # en segundos... (180 minutos)
-freq_exec = 0.5
-contador_ciclos = 0
+porcentaje_caida_1 = param['porcentaje_caida_1']
+porcentaje_beneficio_1 = param['porcentaje_beneficio_1']
+tiempo_caida_minutos_1 = param['tiempo_caida_minutos_1']
+tiempo_caida_1 = tiempo_caida_minutos_1 * 60  # en segundos... (180 minutos)
+freq_exec = param['freq_exec']
+contador_ciclos = param['contador_ciclos']
 tamanio_listas_min = freq_exec * tiempo_caida_1
-factor_tamanio = 100
+factor_tamanio = param['factor_tamanio']
 ordenes_lanzadas = []
 # size_order_bidask = 0.1 ## Para LIMIT
 
@@ -151,10 +154,10 @@ fechas = [dateutil.parser.parse(x) for x in hist_df['time']]
 # pintar_grafica(df_medias_bids_asks(asks, crypto, fechas, 60, 360), crypto)
 
 ### Inicializacion y medias_exp ###
-n_rapida_bids = 120
-n_lenta_bids = 420
-n_rapida_asks = 60
-n_lenta_asks = 360
+n_rapida_bids = param['n_rapida_bids']
+n_lenta_bids = param['n_lenta_bids']
+n_rapida_asks = param['n_rapida_asks']
+n_lenta_asks = param['n_lenta_asks']
 medias_exp_rapida_bids = [medias_exp(bids, n_rapida_bids, n_lenta_bids)[0][-1]]
 medias_exp_lenta_bids = [medias_exp(bids, n_rapida_bids, n_lenta_bids)[1][-1]]
 medias_exp_rapida_asks = [medias_exp(asks, n_rapida_asks, n_lenta_asks)[0][-1]]
@@ -282,22 +285,3 @@ while True:
         print('All done')
         break
 ### FIN ###
-
-# ### LISTA OPCIONAL ###
-# expmediavar_rapida_bidask.append(ema(n_rapida_bidask,precio_bidask, 2.0/(n_rapida_bidask+1), expmediavar_rapida_bidask))
-# expmediavar_lenta_bidask.append(ema(n_lenta_bidask,precio_bidask, 2.0/(n_lenta_bidask+1), expmediavar_lenta_bidask))
-
-#
-# #new fills no por ahora...
-# account = rq.get(api_url + 'fills?product_id=' + crypto, auth=auth)
-# account.json()
-# #fin new
-### Tamanio ordenes ###
-# last_size_order_bidask = size_order_bidask
-
-# ### Tamanio ordenes para LIMIT###
-# size_order_bidask = math.trunc((eur*(1-fees)/precio_venta_bidask)*100)/100
-
-# ### Condiciones para compra-venta ###
-# condiciones_compra = False #trigger_compra_venta(disponibilidad_fondos y on_off_compra_venta), tamaño_listas, condicionales_precios
-# condiciones_venta = False #trigger_compra_venta, condicionales_para_venta(velocidad_subida estancada y margen_beneficios)
