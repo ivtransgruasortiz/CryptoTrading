@@ -199,7 +199,7 @@ while True:
             eur = 0
             pass
         ### Porcentaje de variacion instantanea ###
-        porcentaje_variacion_inst(asks, precio_venta_bidask, tiempo_caida_1, freq_exec)
+        porcentaje = porcentaje_variacion_inst(asks, precio_venta_bidask, tiempo_caida_1, freq_exec)
         ### COMPRAS ###
         if condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
                                 tiempo_caida_1, ordenes_lanzadas, 'buy', trigger, freq_exec, ordenes,
@@ -212,7 +212,7 @@ while True:
                 lista_last_buy.append(precio_venta_bidask)
                 trigger = False
                 print('COMPRA!!!')
-                print(porcentaje_variacion_inst)
+                print(porcentaje)
                 print(ordenes[-int(tiempo_caida_1*freq_exec)])
                 ### BBDD
                 records = db.ultima_compra_records
@@ -247,7 +247,7 @@ while True:
                 lista_last_sell.append(precio_compra_bidask)
                 trigger = True
                 print('VENTA!!!')
-                print(porcentaje_variacion_inst)
+                print(porcentaje)
                 print(ordenes[-int(tiempo_caida_1 * freq_exec)])
                 ### BBDD
                 records = db.ultima_compra_records
@@ -263,7 +263,7 @@ while True:
             print(contador_ciclos)
             print(precio_compra_bidask)
             print(precio_venta_bidask)
-            print(porcentaje_variacion_inst)
+            print(porcentaje)
             print(condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1,
                                        porcentaje_beneficio_1, tiempo_caida_1, ordenes_lanzadas, 'buy', trigger,
                                        freq_exec, ordenes, lista_last_buy, medias_exp_rapida_bids,
