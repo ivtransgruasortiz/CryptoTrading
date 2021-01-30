@@ -60,9 +60,11 @@ import yaml
 ## Importar datos-configuraciones-funciones
 with open('parameters.yaml', 'r') as parameters_file:
     param = yaml.safe_load(parameters_file)
+    parameters_file.close()
 try:
     with open('config.yaml', 'r') as config_file:
         cred = yaml.safe_load(config_file)
+        config_file.close()
 except:
     cred = None
     pass
