@@ -64,6 +64,7 @@ try:
     with open('config.yaml', 'r') as config_file:
         cred = yaml.safe_load(config_file)
 except:
+    cred = None
     pass
 
 print('#####################################')
@@ -77,6 +78,7 @@ try:
     auth = CoinbaseExchangeAuth(cred['Credentials'][0], cred['Credentials'][1], cred['Credentials'][2])
 except:
     auth = CoinbaseExchangeAuth(sys.argv[1], sys.argv[2], sys.argv[3])
+    pass
 
 # ### AUTHENTICATION INTO MongoDB-Atlas ###
 print('\n### Authenticating into MongoDB-Atlas... ###')
@@ -92,7 +94,7 @@ except:
                                                                                            sys.argv[5],
                                                                                            sys.argv[6]))
     db = client.get_database(sys.argv[6])
-
+    pass
 ### GET ACCOUNTS ###
 crypto = param['crypto']
 crypto_short = crypto.split('-')[0]
@@ -103,9 +105,9 @@ api_url = param['api_url']
 # eur = math.trunc(disp_ini['EUR'] * 100) / 100
 # crypto_quantity = math.trunc(disp_ini[crypto_short] * 100) / 100
 
-### fees ###
-fees = rq.get(api_url + 'fees', auth=auth)
-fees = round(float('%.4f' % (float(fees.json()['taker_fee_rate']))), 4)
+# ### fees ###
+# fees = rq.get(api_url + 'fees', auth=auth)
+# fees = round(float('%.4f' % (float(fees.json()['taker_fee_rate']))), 4)
 
 ####################################################
 ### START REAL-TIME TRADING #######################
