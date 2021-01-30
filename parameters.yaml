@@ -1,7 +1,7 @@
 # PARAMETERS
 
 grafica: False # true para que pinte grafica, false para que no la pinte
-nummax: 9999999
+nummax: 9999999 # Inicializacion listas
 porcentaje_limite_stoploss: 0.20 # porcentaje de caída para stoploss - ideal 0.20
 
 crypto: "LTC-EUR" # producto
