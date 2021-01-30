@@ -106,6 +106,14 @@ def porcentaje_variacion_inst(lista_hist, precio_instantaneo, tiempo_caida, freq
                              / lista_hist[-int(tiempo_caida * freq_exec)] * 100) * 100) / 100
     return porcentaje
 
+def stoploss(lista_last_buy, precio_instantaneo, porcentaje_limite_stoploss, nummax):
+    if (lista_last_buy[-1] != nummax) \
+            & (precio_instantaneo < (lista_last_buy[-1] * (1 - porcentaje_limite_stoploss))):
+        stop = True
+    else:
+        stop = False
+    return stop
+
 def condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
                          tiempo_caida_1, ordenes_lanzadas, tipo, trigger, freq_exec, ordenes, last_buy,
                          medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks,

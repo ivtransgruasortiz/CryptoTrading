@@ -54,7 +54,7 @@ else:
 
 from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial, tiempo_pausa_new, \
     CoinbaseExchangeAuth, buy_sell, pinta_historico, condiciones_buy_sell, medias_exp, df_medias_bids_asks, \
-    pintar_grafica, limite_tamanio, historic_df, disposiciones_iniciales, porcentaje_variacion_inst
+    pintar_grafica, limite_tamanio, historic_df, disposiciones_iniciales, porcentaje_variacion_inst, stoploss
 import yaml
 
 print('#####################################')
@@ -121,18 +121,20 @@ n_lenta_bids = param['n_lenta_bids']
 n_rapida_asks = param['n_rapida_asks']
 n_lenta_asks = param['n_lenta_asks']
 grafica = param['grafica']
+nummax = param['nummax']
+porcentaje_limite_stoploss = param['porcentaje_limite_stoploss']
 # size_order_bidask = 0.1 ## Para LIMIT
 
 ### Lectura BBDD-Last_Buy ###
 records = db.ultima_compra_records
 lista_last_buy = list(records.find({}, {"_id": 0}))  # Asi omitimos el _id que por defecto nos agrega mongo
 if lista_last_buy == []:
-    lista_last_buy = [9999999]
-    lista_last_sell = [9999999]
+    lista_last_buy = [nummax]
+    lista_last_sell = [nummax]
     trigger = True
 else:
     lista_last_buy = [lista_last_buy[-1]['last_buy']]
-    lista_last_sell = [9999999]
+    lista_last_sell = [nummax]
     trigger = False
 
 ### Historico ###
@@ -231,12 +233,14 @@ while True:
         except:
             pass
         ### VENTAS ###
+        ### STOPLOSS y Condiciones-Venta ###
+        stop = stoploss(lista_last_buy, precio_compra_bidask, porcentaje_limite_stoploss, nummax)
         condiciones_venta = condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1,
                                                  porcentaje_beneficio_1, tiempo_caida_1, ordenes_lanzadas, 'sell',
                                                  trigger, freq_exec, ordenes, lista_last_buy, medias_exp_rapida_bids,
                                                  medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks,
                                                  indicador_tiempo_de_gracia, hist_df)[0]
-        if condiciones_venta:
+        if condiciones_venta | stop:
             ### FONDOS_DISPONIBLES ###
             disp_ini = disposiciones_iniciales(api_url, auth)
             try:
