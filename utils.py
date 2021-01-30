@@ -99,6 +99,17 @@ def tiempo_pausa_new(exec_time, freq):
         print("la ejecución va ralentizada, hay que disminuir la frecuencia de ejecucion")
     return pausa
 
+def disposiciones_iniciales(api_url, auth):
+    try:
+        account = rq.get(api_url + 'accounts', auth=auth)
+        account = account.json()
+        disp_ini = {}
+        for item in account:
+            disp_ini.update({item['currency']: float(item['available'])})
+    except:
+        pass
+    return disp_ini
+
 def condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
                          tiempo_caida_1, ordenes_lanzadas, tipo, trigger, freq_exec, ordenes, last_buy,
                          medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks,

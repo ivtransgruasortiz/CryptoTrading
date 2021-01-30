@@ -54,7 +54,7 @@ else:
 
 from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial, tiempo_pausa_new, \
     CoinbaseExchangeAuth, buy_sell, pinta_historico, condiciones_buy_sell, medias_exp, df_medias_bids_asks, \
-    pintar_grafica, limite_tamanio, historic_df
+    pintar_grafica, limite_tamanio, historic_df, disposiciones_iniciales
 import yaml
 
 ## Importar datos-configuraciones-funciones
@@ -97,11 +97,7 @@ crypto_short = crypto.split('-')[0]
 api_url = param['api_url']
 
 ### Disp_iniciales ###
-account = rq.get(api_url + 'accounts', auth=auth)
-account = account.json()
-disp_ini = {}
-for item in account:
-    disp_ini.update({item['currency']: float(item['available'])})
+disp_ini = disposiciones_iniciales(api_url, auth)
 
 ### fees ###
 fees = rq.get(api_url + 'fees', auth=auth)
@@ -199,14 +195,10 @@ while True:
         medias_exp_rapida_asks = limite_tamanio(tamanio_listas_min, factor_tamanio, medias_exp_rapida_asks)
         medias_exp_lenta_asks = limite_tamanio(tamanio_listas_min, factor_tamanio, medias_exp_lenta_asks)
         ### FONDOS_DISPONIBLES ##
+        disp_ini = disposiciones_iniciales(api_url, auth)
         try:
-            account = rq.get(api_url + 'accounts', auth=auth)
-            account = account.json()
-            disp_ini = {}
-            for item in account:
-                disp_ini.update({item['currency']: float(item['available'])})
-            eur = math.trunc(disp_ini['EUR']*100)/100
-            crypto_quantity = math.trunc(disp_ini[crypto_short]*100)/100
+            eur = math.trunc(disp_ini['EUR'] * 100) / 100
+            crypto_quantity = math.trunc(disp_ini[crypto_short] * 100) / 100
         except:
             pass
         ### COMPRAS ###
@@ -242,15 +234,11 @@ while True:
                                 lista_last_buy, medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks,
                                 medias_exp_lenta_asks, indicador_tiempo_de_gracia, hist_df)[0]:
             ### FONDOS_DISPONIBLES ###
+            disp_ini = disposiciones_iniciales(api_url, auth)
             try:
-                account = rq.get(api_url + 'accounts', auth=auth)
-                account = account.json()
+                funds_disp = math.trunc(disp_ini[crypto_short] * precio_compra_bidask * 100) / 100
             except:
                 pass
-            disp_ini = {}
-            for item in account:
-                disp_ini.update({item['currency']: float(item['available'])})
-            funds_disp = math.trunc(disp_ini[crypto_short] * precio_compra_bidask * 100) / 100
             ### Orden de Venta ###
             try:
                 # buy_sell('sell', crypto, 'limit', api_url, auth, last_size_order_bidask, precio_compra_bidask) ## LIMIT
