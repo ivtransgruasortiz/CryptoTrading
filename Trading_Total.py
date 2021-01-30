@@ -201,10 +201,12 @@ while True:
         ### Porcentaje de variacion instantanea ###
         porcentaje_inst = porcentaje_variacion_inst(asks, precio_venta_bidask, tiempo_caida_1, freq_exec)
         ### COMPRAS ###
-        if condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
-                                tiempo_caida_1, ordenes_lanzadas, 'buy', trigger, freq_exec, ordenes,
-                                lista_last_buy, medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks,
-                                medias_exp_lenta_asks, indicador_tiempo_de_gracia, hist_df)[0]:
+        condiciones_compra = condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1,
+                                                  porcentaje_beneficio_1, tiempo_caida_1, ordenes_lanzadas, 'buy',
+                                                  trigger, freq_exec, ordenes, lista_last_buy, medias_exp_rapida_bids,
+                                                  medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks,
+                                                  indicador_tiempo_de_gracia, hist_df)[0]
+        if condiciones_compra:
             ### Orden de Compra ###
             try:
                 # buy_sell('buy', crypto, 'limit', api_url, auth, size_order_bidask, precio_venta_bidask) ## LIMIT
@@ -229,10 +231,12 @@ while True:
         except:
             pass
         ### VENTAS ###
-        if condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
-                                tiempo_caida_1, ordenes_lanzadas, 'sell', trigger, freq_exec, ordenes,
-                                lista_last_buy, medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks,
-                                medias_exp_lenta_asks, indicador_tiempo_de_gracia, hist_df)[0]:
+        condiciones_venta = condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1,
+                                                 porcentaje_beneficio_1, tiempo_caida_1, ordenes_lanzadas, 'sell',
+                                                 trigger, freq_exec, ordenes, lista_last_buy, medias_exp_rapida_bids,
+                                                 medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks,
+                                                 indicador_tiempo_de_gracia, hist_df)[0]
+        if condiciones_venta:
             ### FONDOS_DISPONIBLES ###
             disp_ini = disposiciones_iniciales(api_url, auth)
             try:
