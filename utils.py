@@ -71,22 +71,6 @@ class CoinbaseExchangeAuth(AuthBase):
             'Content-Type': 'application/json'})
         return request
 
-def tiempo_pausa(inicio, freq):
-    """
-    FUNCION de usuario que nos da la pausa que debe
-    tener un programa para ejecutar algo según una frecuencia
-    preestablecida p. ejemplo 1/3 (3 ciclos por segundo) etc... al princicipio del bucle se reinicia la variable inicio now()
-    """
-    from datetime import datetime
-    fin = datetime.now()
-    dif_seconds = (fin - inicio).seconds + (fin - inicio).microseconds * 1e-6
-    pausa = freq - dif_seconds
-    if pausa < 0:
-        pausa = 0
-        print("la ejecución va ralentizada, hay que disminuir la frecuencia de ejecucion")
-    print(pausa)
-    return pausa
-
 def tiempo_pausa_new(exec_time, freq):
     """
     FUNCION de usuario que nos da la pausa que debe
@@ -408,6 +392,22 @@ def assign_serial(id_number, serial_dicc, seriales):
     else:
         valor = 0
     return valor
+
+# def tiempo_pausa(inicio, freq):
+#     """
+#     FUNCION de usuario que nos da la pausa que debe
+#     tener un programa para ejecutar algo según una frecuencia
+#     preestablecida p. ejemplo 1/3 (3 ciclos por segundo) etc... al princicipio del bucle se reinicia la variable inicio now()
+#     """
+#     from datetime import datetime
+#     fin = datetime.now()
+#     dif_seconds = (fin - inicio).seconds + (fin - inicio).microseconds * 1e-6
+#     pausa = freq - dif_seconds
+#     if pausa < 0:
+#         pausa = 0
+#         print("la ejecución va ralentizada, hay que disminuir la frecuencia de ejecucion")
+#     print(pausa)
+#     return pausa
 
 # def imprime(cadena):
 #     return print(cadena)
