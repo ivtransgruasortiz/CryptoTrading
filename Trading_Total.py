@@ -38,11 +38,11 @@ import matplotlib.pyplot as plt
 sys.stdout.flush() #Para cambiar el comportamiento de los print -- sin esta línea los escribe del tirón...
 
 ### SYSTEM DATA ###
-#
 if '__file__' in locals():
     wd = os.path.dirname(__file__)
-    wd += '/TradingCrypto/'
+    wd += '/'
     sys.path.append(wd)
+    os.chdir(wd)
 else:
     wd = os.path.abspath("./Documents/Repositorio_Iv/CryptoTrading")
     wd += '/'
