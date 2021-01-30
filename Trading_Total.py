@@ -57,18 +57,6 @@ from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_s
     pintar_grafica, limite_tamanio, historic_df, disposiciones_iniciales
 import yaml
 
-## Importar datos-configuraciones-funciones
-with open('parameters.yaml', 'r') as parameters_file:
-    param = yaml.safe_load(parameters_file)
-    parameters_file.close()
-try:
-    with open('config.yaml', 'r') as config_file:
-        cred = yaml.safe_load(config_file)
-        config_file.close()
-except:
-    cred = None
-    pass
-
 print('#####################################')
 print(sys.platform + ' System')
 print('#####################################')
@@ -76,26 +64,28 @@ print('\n### Importing Libraries... ###')
 
 # ### AUTHENTICATION INTO COINBASE & MongoDB-ATLAS ###
 print('\n### Authenticating into CoinbasePro & MongoDB-Atlas... ###')
-try:
-    auth = CoinbaseExchangeAuth(cred['Credentials'][0], cred['Credentials'][1], cred['Credentials'][2])
-    client = pymongo.MongoClient(
-        "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority" % (cred['Credentials'][3],
-                                                                                           cred['Credentials'][4],
-                                                                                           cred['Credentials'][5]))
-    db = client.get_database(cred['Credentials'][5])
-except:
+if '__file__' in locals():
     auth = CoinbaseExchangeAuth(sys.argv[1], sys.argv[2], sys.argv[3])
     client = pymongo.MongoClient(
         "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority" % (sys.argv[4],
                                                                                            sys.argv[5],
                                                                                            sys.argv[6]))
     db = client.get_database(sys.argv[6])
-    pass
+else:
+    with open('config.yaml', 'r') as config_file:
+        cred = yaml.safe_load(config_file)
+        config_file.close()
+    auth = CoinbaseExchangeAuth(cred['Credentials'][0], cred['Credentials'][1], cred['Credentials'][2])
+    client = pymongo.MongoClient(
+        "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority" % (cred['Credentials'][3],
+                                                                                           cred['Credentials'][4],
+                                                                                           cred['Credentials'][5]))
+    db = client.get_database(cred['Credentials'][5])
 
-### GET ACCOUNTS ###
-crypto = param['crypto']
-crypto_short = crypto.split('-')[0]
-api_url = param['api_url']
+## Importar Parametros
+with open('parameters.yaml', 'r') as parameters_file:
+    param = yaml.safe_load(parameters_file)
+    parameters_file.close()
 
 # ### Disp_iniciales ### OPCIONAL SOLO POR INFORMACION
 # disp_ini = disposiciones_iniciales(api_url, auth)
@@ -113,6 +103,9 @@ print('\n### Data OK! ###')
 print('\n### Real-Time Processing... ### - \nPress CTRL+C (QUICKLY 2-TIMES!!) to cancel and view results')
 
 ### INITIAL RESET FOR VARIABLES ###
+crypto = param['crypto']
+crypto_short = crypto.split('-')[0]
+api_url = param['api_url']
 porcentaje_caida_1 = param['porcentaje_caida_1']
 porcentaje_beneficio_1 = param['porcentaje_beneficio_1']
 tiempo_caida_minutos_1 = param['tiempo_caida_minutos_1']
