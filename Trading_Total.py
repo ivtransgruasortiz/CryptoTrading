@@ -96,8 +96,10 @@ crypto = param['crypto']
 crypto_short = crypto.split('-')[0]
 api_url = param['api_url']
 
-### Disp_iniciales ###
-disp_ini = disposiciones_iniciales(api_url, auth)
+# ### Disp_iniciales ### OPCIONAL SOLO POR INFORMACION
+# disp_ini = disposiciones_iniciales(api_url, auth)
+# eur = math.trunc(disp_ini['EUR'] * 100) / 100
+# crypto_quantity = math.trunc(disp_ini[crypto_short] * 100) / 100
 
 ### fees ###
 fees = rq.get(api_url + 'fees', auth=auth)
@@ -198,7 +200,6 @@ while True:
         disp_ini = disposiciones_iniciales(api_url, auth)
         try:
             eur = math.trunc(disp_ini['EUR'] * 100) / 100
-            crypto_quantity = math.trunc(disp_ini[crypto_short] * 100) / 100
         except:
             pass
         ### COMPRAS ###
