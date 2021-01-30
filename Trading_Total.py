@@ -178,10 +178,10 @@ while True:
             bidask = rq.get(api_url + 'products/' + crypto + '/book?level=1')
             bidask = bidask.json()
             ordenes.append(bidask)
-            precio_compra_bidask = float(ordenes[-1]['bids'][0][0])
-            precio_venta_bidask = float(ordenes[-1]['asks'][0][0])
         except:
             pass
+        precio_compra_bidask = float(ordenes[-1]['bids'][0][0])
+        precio_venta_bidask = float(ordenes[-1]['asks'][0][0])
         ### Actualizacion listas precios y medias_exp ###
         bids.append(precio_compra_bidask)
         asks.append(precio_venta_bidask)
