@@ -41,10 +41,11 @@ sys.stdout.flush() #Para cambiar el comportamiento de los print -- sin esta lín
 #
 if '__file__' in locals():
     wd = os.path.dirname(__file__)
+    wd += '/TradingCrypto/'
     sys.path.append(wd)
 else:
-    wd = os.path.abspath("./Documents/Repositorio_Iv/CryptoTrading/")
-    wd = wd + '/'
+    wd = os.path.abspath("./Documents/Repositorio_Iv/CryptoTrading")
+    wd += '/'
     sys.path.append(wd)
 if sys.platform == 'win32':
     system = sys.platform
