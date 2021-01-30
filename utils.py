@@ -110,6 +110,18 @@ def disposiciones_iniciales(api_url, auth):
         pass
     return disp_ini
 
+def porcentaje_variacion_inst(lista_hist, precio_instantaneo, tiempo_caida, freq_exec):
+    '''
+    :param lista_hist: lista de precios de referencia
+    :param precio_instantaneo: precio instantaneo
+    :param tiempo_caida: tiempo en segundos sobre el que calcular la variacion
+    :param freq_exec: freq. ejecucion
+    :return: porcentaje en % de variacion
+    '''
+    porcentaje = math.trunc(((precio_instantaneo - lista_hist[-int(tiempo_caida * freq_exec)])
+                             / lista_hist[-int(tiempo_caida * freq_exec)] * 100) * 100) / 100
+    return porcentaje
+
 def condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
                          tiempo_caida_1, ordenes_lanzadas, tipo, trigger, freq_exec, ordenes, last_buy,
                          medias_exp_rapida_bids, medias_exp_lenta_bids, medias_exp_rapida_asks, medias_exp_lenta_asks,

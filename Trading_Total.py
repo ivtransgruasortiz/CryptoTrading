@@ -54,7 +54,7 @@ else:
 
 from utils import sma, ema, lag, percent, rsi, compare_dates, valor_op, assign_serial, tiempo_pausa_new, \
     CoinbaseExchangeAuth, buy_sell, pinta_historico, condiciones_buy_sell, medias_exp, df_medias_bids_asks, \
-    pintar_grafica, limite_tamanio, historic_df, disposiciones_iniciales
+    pintar_grafica, limite_tamanio, historic_df, disposiciones_iniciales, porcentaje_variacion_inst
 import yaml
 
 print('#####################################')
@@ -196,7 +196,10 @@ while True:
         try:
             eur = math.trunc(disp_ini['EUR'] * 100) / 100
         except:
+            eur = 0
             pass
+        ### Porcentaje de variacion instantanea ###
+        porcentaje_variacion_inst(asks, precio_venta_bidask, tiempo_caida_1, freq_exec)
         ### COMPRAS ###
         if condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1, porcentaje_beneficio_1,
                                 tiempo_caida_1, ordenes_lanzadas, 'buy', trigger, freq_exec, ordenes,
@@ -209,6 +212,7 @@ while True:
                 lista_last_buy.append(precio_venta_bidask)
                 trigger = False
                 print('COMPRA!!!')
+                print(porcentaje_variacion_inst)
                 print(ordenes[-int(tiempo_caida_1*freq_exec)])
                 ### BBDD
                 records = db.ultima_compra_records
@@ -243,6 +247,8 @@ while True:
                 lista_last_sell.append(precio_compra_bidask)
                 trigger = True
                 print('VENTA!!!')
+                print(porcentaje_variacion_inst)
+                print(ordenes[-int(tiempo_caida_1 * freq_exec)])
                 ### BBDD
                 records = db.ultima_compra_records
                 records.remove()
@@ -257,6 +263,7 @@ while True:
             print(contador_ciclos)
             print(precio_compra_bidask)
             print(precio_venta_bidask)
+            print(porcentaje_variacion_inst)
             print(condiciones_buy_sell(precio_compra_bidask, precio_venta_bidask, porcentaje_caida_1,
                                        porcentaje_beneficio_1, tiempo_caida_1, ordenes_lanzadas, 'buy', trigger,
                                        freq_exec, ordenes, lista_last_buy, medias_exp_rapida_bids,
