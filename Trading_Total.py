@@ -72,29 +72,24 @@ print(sys.platform + ' System')
 print('#####################################')
 print('\n### Importing Libraries... ###')
 
-# ### AUTHENTICATION INTO COINBASE ###
-print('\n### Authenticating into CoinbasePro... ###')
+# ### AUTHENTICATION INTO COINBASE & MongoDB-ATLAS ###
+print('\n### Authenticating into CoinbasePro & MongoDB-Atlas... ###')
 try:
     auth = CoinbaseExchangeAuth(cred['Credentials'][0], cred['Credentials'][1], cred['Credentials'][2])
-except:
-    auth = CoinbaseExchangeAuth(sys.argv[1], sys.argv[2], sys.argv[3])
-    pass
-
-# ### AUTHENTICATION INTO MongoDB-Atlas ###
-print('\n### Authenticating into MongoDB-Atlas... ###')
-try:
     client = pymongo.MongoClient(
         "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority" % (cred['Credentials'][3],
                                                                                            cred['Credentials'][4],
                                                                                            cred['Credentials'][5]))
     db = client.get_database(cred['Credentials'][5])
 except:
+    auth = CoinbaseExchangeAuth(sys.argv[1], sys.argv[2], sys.argv[3])
     client = pymongo.MongoClient(
         "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority" % (sys.argv[4],
                                                                                            sys.argv[5],
                                                                                            sys.argv[6]))
     db = client.get_database(sys.argv[6])
     pass
+
 ### GET ACCOUNTS ###
 crypto = param['crypto']
 crypto_short = crypto.split('-')[0]
