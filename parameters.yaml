@@ -1,5 +1,7 @@
 # PARAMETERS
 
+grafica: False # true para que pinte grafica, false para que no la pinte
+
 crypto: "LTC-EUR" # producto
 
 api_url: 'https://api.pro.coinbase.com/' # url de la api

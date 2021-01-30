@@ -82,13 +82,15 @@ except:
 print('\n### Authenticating into MongoDB-Atlas... ###')
 try:
     client = pymongo.MongoClient(
-        "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority"
-        % (cred['Credentials'][3], cred['Credentials'][4], cred['Credentials'][5]))
+        "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority" % (cred['Credentials'][3],
+                                                                                           cred['Credentials'][4],
+                                                                                           cred['Credentials'][5]))
     db = client.get_database(cred['Credentials'][5])
 except:
     client = pymongo.MongoClient(
-        "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority"
-        % (sys.argv[4], sys.argv[5], sys.argv[6]))
+        "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority" % (sys.argv[4],
+                                                                                           sys.argv[5],
+                                                                                           sys.argv[6]))
     db = client.get_database(sys.argv[6])
 
 ### GET ACCOUNTS ###
@@ -122,6 +124,11 @@ contador_ciclos = param['contador_ciclos']
 tamanio_listas_min = freq_exec * tiempo_caida_1
 factor_tamanio = param['factor_tamanio']
 ordenes_lanzadas = []
+n_rapida_bids = param['n_rapida_bids']
+n_lenta_bids = param['n_lenta_bids']
+n_rapida_asks = param['n_rapida_asks']
+n_lenta_asks = param['n_lenta_asks']
+grafica = param['grafica']
 # size_order_bidask = 0.1 ## Para LIMIT
 
 ### Lectura BBDD-Last_Buy ###
@@ -137,26 +144,22 @@ else:
     trigger = False
 
 ### Historico ###
-historico = True
-if historico:
-    hist_df = historic_df(crypto, api_url, auth, pag_historic)
-    ordenes = hist_df[['bids', 'asks', 'sequence']].to_dict(orient='records')
-else:
-    ordenes = []
-
-### MEDIAS EXP HISTORICAS ###
+hist_df = historic_df(crypto, api_url, auth, pag_historic)
+ordenes = hist_df[['bids', 'asks', 'sequence']].to_dict(orient='records')
 bids = [x[0][0] for x in list(hist_df['bids'].values)]
 asks = [x[0][0] for x in list(hist_df['asks'].values)]
+
+### MEDIAS EXP HISTORICAS ###
 fechas = [dateutil.parser.parse(x) for x in hist_df['time']]
+df_hist_exp = df_medias_bids_asks(asks, crypto, fechas, n_rapida_asks, n_lenta_asks)
 
 # ### PINTAR GRAFICAS ###
-# pintar_grafica(df_medias_bids_asks(asks, crypto, fechas, 60, 360), crypto)
+if grafica:
+    pintar_grafica(df_hist_exp, crypto)
+else:
+    pass
 
 ### Inicializacion y medias_exp ###
-n_rapida_bids = param['n_rapida_bids']
-n_lenta_bids = param['n_lenta_bids']
-n_rapida_asks = param['n_rapida_asks']
-n_lenta_asks = param['n_lenta_asks']
 medias_exp_rapida_bids = [medias_exp(bids, n_rapida_bids, n_lenta_bids)[0][-1]]
 medias_exp_lenta_bids = [medias_exp(bids, n_rapida_bids, n_lenta_bids)[1][-1]]
 medias_exp_rapida_asks = [medias_exp(asks, n_rapida_asks, n_lenta_asks)[0][-1]]
@@ -239,6 +242,7 @@ while True:
             try:
                 funds_disp = math.trunc(disp_ini[crypto_short] * precio_compra_bidask * 100) / 100
             except:
+                funds_disp = 0
                 pass
             ### Orden de Venta ###
             try:
