@@ -118,6 +118,7 @@ porcentaje_caida_1 = param['porcentaje_caida_1']
 porcentaje_beneficio_1 = param['porcentaje_beneficio_1']
 tiempo_caida_minutos_1 = param['tiempo_caida_minutos_1']
 tiempo_caida_1 = tiempo_caida_minutos_1 * 60  # en segundos... (180 minutos)
+pag_historic = param['pag_historic']
 freq_exec = param['freq_exec']
 contador_ciclos = param['contador_ciclos']
 tamanio_listas_min = freq_exec * tiempo_caida_1
@@ -140,7 +141,6 @@ else:
 ### Historico ###
 historico = True
 if historico:
-    pag_historic = 50
     hist_df = historic_df(crypto, api_url, auth, pag_historic)
     ordenes = hist_df[['bids', 'asks', 'sequence']].to_dict(orient='records')
 else:

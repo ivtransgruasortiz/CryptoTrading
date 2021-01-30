@@ -4,11 +4,12 @@ crypto: "LTC-EUR" # producto
 
 api_url: 'https://api.pro.coinbase.com/' # url de la api
 
-porcentaje_caida_1: 0.05 # porcentaje de caída minimo necesario para la compra
+porcentaje_caida_1: 0.04 # porcentaje de caída minimo necesario para la compra - ideal 0.05
 porcentaje_beneficio_1: 0.02 # porcentaje mínimo de beneficio
-tiempo_caida_minutos_1: 120 # tiempo máximo de caida en minutos
+tiempo_caida_minutos_1: 180 # tiempo máximo de caida en minutos - ideal 120
+pag_historic: 100 # paginas para contar hacia atras y reconstruir historico, cada pag son 100 resultados - ideal 50
 
-freq_exec: 0.5 # frecuencia máxima de ejecución por ciclo Hz
+freq_exec: 1 # frecuencia máxima de ejecución por ciclo Hz - ideal 0.5
 contador_ciclos: 0 # contador de ciclos
 factor_tamanio: 100 # factor por el que multiplicar el numero de ciclos para limitar tamanio listas
 
@@ -16,4 +17,3 @@ n_rapida_bids: 120 # intervalo para el calculo de la media rapida en los bids (c
 n_lenta_bids: 420 # intervalo para el calculo de la media lenta en los bids (compras) utilizado en nuestras ventas de cripto
 n_rapida_asks: 60 # intervalo para el calculo de la media rapida en los asks (ventas) utilizado en nuestras compras de cripto
 n_lenta_asks: 360 # intervalo para el calculo de la media lenta en los bids (ventas) utilizado en nuestras compras de cripto
-
