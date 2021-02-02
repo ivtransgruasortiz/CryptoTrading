@@ -1,4 +1,7 @@
 # PARAMETERS
+crypto_trading_db: 'crypto_trading_db'
+whatsapp_twilio_db: 'whatsapp_twilio_db'
+mail_db: 'mail_db'
 
 grafica: False # true para que pinte grafica, false para que no la pinte
 nummax: 9999999 # Inicializacion listas

@@ -62,6 +62,15 @@ print(sys.platform + ' System')
 print('#####################################')
 print('\n### Importing Libraries... ###')
 
+## Importar Parametros
+with open('parameters.yaml', 'r') as parameters_file:
+    param = yaml.safe_load(parameters_file)
+    parameters_file.close()
+
+crypto_trading_db = param['crypto_trading_db']
+whatsapp_twilio_db = param['whatsapp_twilio_db']
+mail_db = param['mail_db']
+
 # ### AUTHENTICATION INTO COINBASE & MongoDB-ATLAS ###
 print('\n### Authenticating into CoinbasePro & MongoDB-Atlas... ###')
 if '__file__' in locals():
@@ -69,8 +78,8 @@ if '__file__' in locals():
     client = pymongo.MongoClient(
         "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority" % (sys.argv[4],
                                                                                            sys.argv[5],
-                                                                                           sys.argv[6]))
-    db = client.get_database(sys.argv[6])
+                                                                                           crypto_trading_db))
+    db = client.get_database(crypto_trading_db)
 else:
     with open('config.yaml', 'r') as config_file:
         cred = yaml.safe_load(config_file)
@@ -79,13 +88,8 @@ else:
     client = pymongo.MongoClient(
         "mongodb+srv://%s:%s@cluster0.vsp3s.mongodb.net/%s?retryWrites=true&w=majority" % (cred['Credentials'][3],
                                                                                            cred['Credentials'][4],
-                                                                                           cred['Credentials'][5]))
-    db = client.get_database(cred['Credentials'][5])
-
-## Importar Parametros
-with open('parameters.yaml', 'r') as parameters_file:
-    param = yaml.safe_load(parameters_file)
-    parameters_file.close()
+                                                                                           crypto_trading_db))
+    db = client.get_database(crypto_trading_db)
 
 # ### Disp_iniciales ### OPCIONAL SOLO POR INFORMACION
 # disp_ini = disposiciones_iniciales(api_url, auth)
